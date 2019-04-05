@@ -1,0 +1,21 @@
+{
+  "name": "dts-apigen",
+  "version": "1.0.0-beta.1",
+  "description": "A d.ts and documentation generator for TypeScript and JavaScript projects.",
+  "main": "lib/index.js",
+  "repository": "https://github.com/chialab/dts-apigen",
+  "author": "Chialab <dev@chialab.io> (https://www.chialab.it)",
+  "license": "MIT",
+  "bin": {
+    "dts-apigen": "bin/dts-apigen"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "rm -rf lib && tsc"
+  },
+  "dependencies": {
+    "@microsoft/api-extractor": "^7.0.0",
+    "commander": "^2.19.0",
+    "typescript": "~3.1.6"
+  }
+}

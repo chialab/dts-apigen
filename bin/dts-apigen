@@ -1,0 +1,59 @@
+#!/usr/bin/env node
+
+const cli = require('commander');
+const json = require('../package.json');
+const { createProgram, createBundlerProgram, templates } = require('../lib/index.js');
+
+cli.version(json.version);
+
+cli
+    .command('generate <file>')
+    .description('Generate declaration files')
+    .option('-O, --out <dir>', 'Output directory for generated declaration files.')
+    .action((file, options) => {
+        let program = createProgram([file], {
+            declarationDir: options.out,
+        });
+        program.emit();
+    });
+
+cli
+    .command('bundle <file>')
+    .description('Bundle all declaration files into a single .d.ts file')
+    .option('-O, --out <file>', 'Output file for declaration file bundle.')
+    .action((file, options) => {
+        if (!options.out) {
+            throw new Error('missing `out` option');
+        }
+        let program = createBundlerProgram([file], {
+            outputFile: options.out,
+        });
+        program.emit();
+    });
+
+cli
+    .command('documentate <file>')
+    .description('Generate an API documentation markdown file')
+    .option('-O, --out <dir>', 'Output dir for markdown files.')
+    .option('-T, --template <module>', 'The template function to render documentation.')
+    .option('--mode [mode]', 'The mode to use for markdown documentation. Accepted values are `module` and `files`')
+    .action((file, options) => {
+        if (!options.out) {
+            throw new Error('missing `out` option');
+        }
+        let program = createBundlerProgram([file], {});
+        let result = program.emit();
+        let template = templates.markdown;
+        if (options.template) {
+            template = require(out.template);
+        }
+        template(result.dts, result.packageJson, options);
+    });
+
+cli.on('command:*', () => {
+    console.error('Invalid command: %s\n', cli.args.join(' '));
+    cli.outputHelp();
+    process.exit(1);
+});
+
+cli.parse(process.argv);
