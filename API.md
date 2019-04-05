@@ -5,17 +5,23 @@
 
 
 
-| Methods |
-| ------- |
-| [createBundlerProgram](#createBundlerProgram), [createCompilerHost](#createCompilerHost), [createProgram](#createProgram) |
 
-| Constants |
-| ------- |
-| [templates](#templates), [transformers](#transformers) |
 
-| Types |
-| ------- |
-| [EmitResultWithDts](#EmitResultWithDts), [TemplateFactory](#TemplateFactory), [TemplateOptions](#TemplateOptions) |
+**Methods**
+
+[createBundlerProgram](#createBundlerProgram), [createCompilerHost](#createCompilerHost), [createProgram](#createProgram)
+
+
+**Constants**
+
+[templates](#templates), [transformers](#transformers)
+
+
+**Types**
+
+[EmitResultWithDts](#EmitResultWithDts), [TemplateFactory](#TemplateFactory), [TemplateOptions](#TemplateOptions) 
+
+
 
 ---
 
@@ -102,7 +108,7 @@ A list of template factories for documentation generation.
 
 **Type:**
 
-<code>{<br>&nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;[TemplateFactory](#TemplateFactory)<[TemplateOptions](#TemplateOptions)>;<br>}</code>
+<code>{&#10;&nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;[TemplateFactory](#TemplateFactory)<[TemplateOptions](#TemplateOptions)>;&#10;}</code>
 
 
 ---
@@ -126,7 +132,7 @@ The result of the program emit
 Implements the typescript EmitResult with some extra fields like `dts`, `packageJsonPath` and `packageJson`
 
 
-<code>EmitResult&nbsp;&&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;dts:&nbsp;ReadonlyArray<SourceFile>;<br>&nbsp;&nbsp;&nbsp;&nbsp;packageJsonPath:&nbsp;string;<br>&nbsp;&nbsp;&nbsp;&nbsp;packageJson:&nbsp;IPackageJson;<br>}</code>
+<code>EmitResult&nbsp;&&nbsp;{&#10;&nbsp;&nbsp;&nbsp;&nbsp;dts:&nbsp;ReadonlyArray<SourceFile>;&#10;&nbsp;&nbsp;&nbsp;&nbsp;packageJsonPath:&nbsp;string;&#10;&nbsp;&nbsp;&nbsp;&nbsp;packageJson:&nbsp;IPackageJson;&#10;}</code>
 
 
 ---
@@ -149,4 +155,4 @@ The options to pass to the template generator.
 `out` property is always required.
 
 
-<code>{<br>&nbsp;&nbsp;&nbsp;&nbsp;out:&nbsp;string;<br>&nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;any;<br>}</code>
+<code>{&#10;&nbsp;&nbsp;&nbsp;&nbsp;out:&nbsp;string;&#10;&nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;any;&#10;}</code>

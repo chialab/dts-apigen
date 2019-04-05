@@ -136,25 +136,31 @@ function generateIndex(modules: ModuleDeclaration[], classes: ClassDeclaration[]
 ## Summary
 
 ${modules.length ? `
-| Modules |
-| ------- |
-| ${modules.map((mod) => `${mod.name.getText()}`).join(', ')} |` : ''}
+**Modules**
+
+${modules.map((mod) => `${mod.name.getText()}`).join(', ')}` : ''}
+
 ${classes.length ? `
-| Classes |
-| ------- |
-| ${classes.map((clazz) => toLink(clazz.name.getText(), clazz, options)).join(', ')} |` : ''}
+**Classes**
+
+${classes.map((clazz) => toLink(clazz.name.getText(), clazz, options)).join(', ')}` : ''}
+
 ${Object.values(methods).length ? `
-| Methods |
-| ------- |
-| ${Object.values(methods).map((methodDeclarationList) => toLink(methodDeclarationList[0].name.getText(), methodDeclarationList[0], options)).join(', ')} |` : ''}
+**Methods**
+
+${Object.values(methods).map((methodDeclarationList) => toLink(methodDeclarationList[0].name.getText(), methodDeclarationList[0], options)).join(', ')}` : ''}
+
 ${constants.length ? `
-| Constants |
-| ------- |
-| ${constants.map((constant) => toLink(constant.name.getText(), constant, options)).join(', ')} |` : ''}
+**Constants**
+
+${constants.map((constant) => toLink(constant.name.getText(), constant, options)).join(', ')}` : ''}
+
 ${types.length ? `
-| Types |
-| ------- |
-| ${types.map((type) => toLink(type.name.getText(), type, options)).join(', ')} |` : ''}`;
+**Types**
+
+${types.map((type) => toLink(type.name.getText(), type, options)).join(', ')} ` : ''}
+
+`;
 }
 
 function generateClass(clazz: ClassDeclaration, types, options) {
@@ -249,7 +255,7 @@ function generateConstant(constant: VariableDeclaration, types, options) {
     return `### ${constant.name.getText()}
 
 ${description ? `\n${description.trim()}\n` : ''}
-${constant.type ? `**Type:**\n\n<code>${renderType(constant.type, types, options).replace(/\n/g, '<br>').replace(/\s/g, '&nbsp;')}</code>` : ''}
+${constant.type ? `**Type:**\n\n<code>${renderType(constant.type, types, options).replace(/\n/g, '&#10;').replace(/\s/g, '&nbsp;')}</code>` : ''}
 `;
 }
 
@@ -265,7 +271,7 @@ function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, types, op
 
 ${description ? `\n${description.trim()}\n` : ''}
 
-<code>${declarations.replace(/\n/g, '<br>').replace(/\s/g, '&nbsp;')}</code>
+<code>${declarations.replace(/\n/g, '&#10;').replace(/\s/g, '&nbsp;')}</code>
 `;
 }
 
