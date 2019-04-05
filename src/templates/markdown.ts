@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, ArrayTypeNode, TypeReferenceNode, UnionTypeNode, ParenthesizedTypeNode, NodeArray, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode } from 'typescript';
+import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, ArrayTypeNode, TypeReferenceNode, UnionTypeNode, ParenthesizedTypeNode, NodeArray, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode } from 'typescript';
 import { ensureFile, getParamDescription, getReturnDescription, getNodeDescription } from '../helpers';
 import { TemplateOptions } from './index';
 import { IPackageJson } from '@microsoft/node-core-library';
@@ -70,6 +70,11 @@ ${type.members.map((member) => `${renderType(member, list, options, useHtml).rep
     }
     if (isLiteralTypeNode(type)) {
         return type.literal.getText();
+    }
+    if (isConstructorTypeNode(type)) {
+        return `constructor(${
+            type.parameters.map((param) => `${param.name.getText()}${param.questionToken ? '?' : ''}: ${renderType(param.type, list, options, useHtml)}`).join(', ')
+        }): ${renderType(type.type, list, options, useHtml)}`;
     }
     switch (type.kind) {
         case SyntaxKind.NumberKeyword:
@@ -166,8 +171,12 @@ function generateClass(clazz: ClassDeclaration, types, options) {
                 instanceProperties.push(member);
             }
         });
-    let instanceMethods: { [key: string]: MethodDeclaration[] } = {};
-    let staticMethods: { [key: string]: MethodDeclaration[] } = {};
+    let instanceMethods: { [key: string]: MethodDeclaration[] } = {
+        __proto__: null,
+    };
+    let staticMethods: { [key: string]: MethodDeclaration[] } = {
+        __proto__: null,
+    };
     clazz.members
         .filter((member) => isMethodDeclaration(member))
         .map((member) => member as MethodDeclaration)
@@ -183,14 +192,14 @@ function generateClass(clazz: ClassDeclaration, types, options) {
         });
     return `### ${clazz.name.getText()}
 
-${clazz.heritageClauses.length ? `**Extends:** ${renderType(clazz.heritageClauses[0].types[0], types, options)}` : ''}
+${clazz.heritageClauses && clazz.heritageClauses.length ? `**Extends:** ${renderType(clazz.heritageClauses[0].types[0], types, options)}` : ''}
 
 ${description ? `\n${description.trim()}\n` : ''}
 ${instanceProperties.length ? `#### Properties
 
 | Name | Type | Readonly | Description |
 | ---- | ---- | :------: | ----------- |
-${instanceProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, types, options).replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getNodeDescription(prop) || ''} |`).join('\n')}
+${instanceProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, types, options).replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getNodeDescription(prop) || ''} |`).join('\n')}
 ` : ''}
 
 ${Object.keys(instanceMethods).length ? `#### Methods
@@ -202,7 +211,7 @@ ${staticProperties.length ? `#### Static properties
 
 | Name | Type | Readonly | Description |
 | ---- | ---- | :------: | ----------- |
-${staticProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, types, options).replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getNodeDescription(prop) || ''} |`).join('\n')}
+${staticProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, types, options).replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getNodeDescription(prop) || ''} |`).join('\n')}
 ` : ''}
 
 ${Object.keys(staticMethods).length ? `#### Static methods
