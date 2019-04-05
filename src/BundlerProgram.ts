@@ -40,6 +40,7 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
                 configObject: {
                     mainEntryPointFile: entryPointSourceFile,
                     compiler: {
+                        overrideTsconfig: {},
                         rootFolder: program.getCompilerOptions().rootDir,
                     },
                     tsdocMetadata: {
