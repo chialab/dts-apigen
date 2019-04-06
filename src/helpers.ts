@@ -43,6 +43,17 @@ export function getOriginalNode(node: Node & { original?: Node }): Node {
 }
 
 /**
+ * Get a list of JSDoc tags by name for a node
+ * @param node The scope node
+ * @param name The tag name
+ * @return The JSDoc tags list
+ */
+export function getTagsByName(node: Node, name: string): ReadonlyArray<JSDocTag> {
+    let tags = getJSDocTags(getOriginalNode(node)) || [];
+    return tags.filter((tag) => tag.tagName.escapedText === name);
+}
+
+/**
  * Get a JSDoc tag by name for a node
  * @param node The scope node
  * @param name The tag name
@@ -50,7 +61,7 @@ export function getOriginalNode(node: Node & { original?: Node }): Node {
  */
 export function getTagByName(node: Node, name: string): JSDocTag {
     let tags = getJSDocTags(getOriginalNode(node)) || [];
-    return tags.find((tag) => tag.tagName.getText() === name);
+    return tags.find((tag) => tag.tagName.escapedText === name);
 }
 
 /**
@@ -64,7 +75,17 @@ export function getNodeDescription(node: Node & { jsDoc?: any[] }): string {
     if (!comment) {
         return null;
     }
-    return comment.comment;
+    return comment.comment.replace(/[ ]*\*/g, '');
+}
+
+/**
+ * Get the JSDoc examples for a node
+ * @param node The scope node
+ * @return A list of examples for the node
+ */
+export function getNodeExamples(node: Node & { jsDoc?: any[] }): string[] {
+    let tags = getTagsByName(node, 'example') || [];
+    return tags.map((tag) => tag.comment.replace(/[ ]*\*/g, ''));
 }
 
 /**

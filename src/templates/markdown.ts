@@ -1,7 +1,7 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, ArrayTypeNode, TypeReferenceNode, UnionTypeNode, ParenthesizedTypeNode, NodeArray, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode } from 'typescript';
-import { ensureFile, getParamDescription, getReturnDescription, getNodeDescription } from '../helpers';
+import { ensureFile, getParamDescription, getReturnDescription, getNodeDescription, getNodeExamples } from '../helpers';
 import { TemplateOptions } from './index';
 import { IPackageJson } from '@microsoft/node-core-library';
 
@@ -55,7 +55,9 @@ ${type.members.map((member) => `${renderType(member, list, options, useHtml).rep
         }): ${renderType(type.type, list, options, useHtml)}`;
     }
     if (isTypeQueryNode(type)) {
-        return type.exprName.getText();
+        let name = type.exprName.getText();
+        let linked = list.find((item) => item.name.getText() === name);
+        return `${linked ? toLink(name, linked, options, useHtml) : name}`;
     }
     if (isTypeParameterDeclaration(type)) {
         return `${type.name.getText()}${type.constraint ? ` extends ${renderType(type.constraint, list, options, useHtml)}` : ''}`;
@@ -165,6 +167,7 @@ ${types.map((type) => toLink(type.name.getText(), type, options)).join(', ')} ` 
 
 function generateClass(clazz: ClassDeclaration, types, options) {
     let description = getNodeDescription(clazz);
+    let samples = getNodeExamples(clazz);
     let instanceProperties: PropertyDeclaration[] = [];
     let staticProperties: PropertyDeclaration[] = [];
     clazz.members
@@ -200,7 +203,12 @@ function generateClass(clazz: ClassDeclaration, types, options) {
 
 ${clazz.heritageClauses && clazz.heritageClauses.length ? `**Extends:** ${renderType(clazz.heritageClauses[0].types[0], types, options)}` : ''}
 
-${description ? `\n${description.trim()}\n` : ''}
+${description ? description.trim() : ''}
+
+${samples.length ? `#### Examples
+
+${samples.join('\n\n')}` : ''}
+
 ${instanceProperties.length ? `#### Properties
 
 | Name | Type | Readonly | Description |
@@ -229,9 +237,11 @@ ${Object.values(staticMethods).map((methodList) => generateMethod(methodList, ty
 
 function generateMethod(methodDeclarationList: (FunctionDeclaration|MethodDeclaration)[], types, options: MarkdownTemplateOptions, isTitle: boolean = true) {
     let description = getNodeDescription(methodDeclarationList[0]);
+    let samples = getNodeExamples(methodDeclarationList[0]);
     return `${isTitle ? '### ' : '**'}${methodDeclarationList[0].name.getText()}${isTitle ? '' : '**'}
 
-${description ? `\n${description.trim()}\n` : ''}
+${description ? description.trim() : ''}
+
 ${methodDeclarationList.map((method) => `<details>
 <summary>
 <code>(${method.parameters.map((param) => `${param.name.getText()}${param.questionToken ? '?' : ''}: ${renderType(param.type, types, options, true)}`).join(', ')}): ${renderType(method.type, types, options, true)}</code>
@@ -247,20 +257,32 @@ ${method.parameters
 
 **Returns**: <code>${renderType(method.type, types, options).replace(/\n/g, ' ')}</code> ${getReturnDescription(methodDeclarationList[0]) || ''}
 
-</details>`).join('\n')}`;
+</details>`).join('\n')}
+
+${samples.length ? `#### Examples
+
+${samples.join('\n\n')}` : ''}
+`;
 }
 
 function generateConstant(constant: VariableDeclaration, types, options) {
     let description = getNodeDescription(constant) || getNodeDescription(constant.parent.parent);
+    let samples = getNodeExamples(constant);
     return `### ${constant.name.getText()}
 
-${description ? `\n${description.trim()}\n` : ''}
-${constant.type ? `**Type:**\n\n<code>${renderType(constant.type, types, options).replace(/\n/g, '&#10;').replace(/\s/g, '&nbsp;')}</code>` : ''}
+${description ? description.trim() : ''}
+
+${samples.length ? `#### Examples
+
+${samples.join('\n\n')}` : ''}
+
+${constant.type ? `**Type:**\n\n<code><pre>${renderType(constant.type, types, options).replace(/ /g, '&nbsp;')}</pre></code>` : ''}
 `;
 }
 
 function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, types, options) {
     let description = getNodeDescription(type);
+    let samples = getNodeExamples(type);
     let declarations;
     if (isTypeAliasDeclaration(type)) {
         declarations = renderType(type.type, types, options);
@@ -269,9 +291,13 @@ function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, types, op
     }
     return `### ${type.name.getText()}
 
-${description ? `\n${description.trim()}\n` : ''}
+${description ? description.trim() : ''}
 
-<code>${declarations.replace(/\n/g, '&#10;').replace(/\s/g, '&nbsp;')}</code>
+${samples.length ? `#### Examples
+
+${samples.join('\n\n')}` : ''}
+
+<code><pre>${declarations.replace(/ /g, '&nbsp;')}</pre></code>
 `;
 }
 
