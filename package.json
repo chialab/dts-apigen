@@ -1,6 +1,6 @@
 {
   "name": "dts-apigen",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "description": "A d.ts and documentation generator for TypeScript and JavaScript projects.",
   "main": "lib/index.js",
   "repository": "https://github.com/chialab/dts-apigen",

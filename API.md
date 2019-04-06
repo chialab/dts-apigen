@@ -27,7 +27,6 @@
 
 ### createBundlerProgram
 
-
 Create a TypeScript program for bundle generation
 
 <details>
@@ -49,10 +48,12 @@ Create a TypeScript program for bundle generation
 
 </details>
 
+
+
+
 ---
 
 ### createCompilerHost
-
 
 Create a custom CompilerHost that treats JS files as regular TS files in order to generate declarations.
 
@@ -73,10 +74,12 @@ Create a custom CompilerHost that treats JS files as regular TS files in order t
 
 </details>
 
+
+
+
 ---
 
 ### createProgram
-
 
 Create a TypeScript program with custom transformers and custom resolution for JS files
 
@@ -99,60 +102,74 @@ Create a TypeScript program with custom transformers and custom resolution for J
 
 </details>
 
+
+
+
 ---
 
 ### templates
 
-
 A list of template factories for documentation generation.
+
+
 
 **Type:**
 
-<code>{&#10;&nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;[TemplateFactory](#TemplateFactory)<[TemplateOptions](#TemplateOptions)>;&#10;}</code>
+<code><pre>{
+&nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;[TemplateFactory](#TemplateFactory)<[TemplateOptions](#TemplateOptions)>;
+}</pre></code>
 
 
 ---
 
 ### transformers
 
-
 The full list of JSDoc transformers.
+
+
 
 **Type:**
 
-<code>TransformerFactory<SourceFile>[]</code>
+<code><pre>TransformerFactory<SourceFile>[]</pre></code>
 
 
 ---
 
 ### EmitResultWithDts
 
-
 The result of the program emit
 Implements the typescript EmitResult with some extra fields like `dts`, `packageJsonPath` and `packageJson`
 
 
-<code>EmitResult&nbsp;&&nbsp;{&#10;&nbsp;&nbsp;&nbsp;&nbsp;dts:&nbsp;ReadonlyArray<SourceFile>;&#10;&nbsp;&nbsp;&nbsp;&nbsp;packageJsonPath:&nbsp;string;&#10;&nbsp;&nbsp;&nbsp;&nbsp;packageJson:&nbsp;IPackageJson;&#10;}</code>
+
+<code><pre>EmitResult&nbsp;&&nbsp;{
+&nbsp;&nbsp;&nbsp;&nbsp;dts:&nbsp;ReadonlyArray<SourceFile>;
+&nbsp;&nbsp;&nbsp;&nbsp;packageJsonPath:&nbsp;string;
+&nbsp;&nbsp;&nbsp;&nbsp;packageJson:&nbsp;IPackageJson;
+}</pre></code>
 
 
 ---
 
 ### TemplateFactory
 
-
 A function that generate documentation using source files, package json data and template options.
 
 
-<code>(sourceFiles:&nbsp;SourceFile[],&nbsp;packageJson:&nbsp;IPackageJson,&nbsp;options:&nbsp;T):&nbsp;void</code>
+
+<code><pre>(sourceFiles:&nbsp;SourceFile[],&nbsp;packageJson:&nbsp;IPackageJson,&nbsp;options:&nbsp;T):&nbsp;void</pre></code>
 
 
 ---
 
 ### TemplateOptions
 
-
 The options to pass to the template generator.
 `out` property is always required.
 
 
-<code>{&#10;&nbsp;&nbsp;&nbsp;&nbsp;out:&nbsp;string;&#10;&nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;any;&#10;}</code>
+
+<code><pre>{
+&nbsp;&nbsp;&nbsp;&nbsp;out:&nbsp;string;
+&nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;any;
+}</pre></code>
