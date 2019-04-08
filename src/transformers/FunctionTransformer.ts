@@ -55,6 +55,9 @@ export function visitor(node: Node): Node {
         }
         case SyntaxKind.VariableDeclaration: {
             if (!(node as VariableDeclaration).type) {
+                if (!(node as VariableDeclaration).initializer) {
+                    break;
+                }
                 let fn = visitor((node as VariableDeclaration).initializer);
                 switch (fn.kind) {
                     case SyntaxKind.ArrowFunction:

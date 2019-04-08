@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, statSync, unlinkSync, rmdirSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { Node, TransformerFactory, SourceFile, TransformationContext, forEachChild, createModifier, getJSDocTags, JSDocTag, createModifiersFromModifierFlags, FunctionDeclaration, SyntaxKind, isJSDocParameterTag, isSourceFile, MethodDeclaration } from 'typescript';
+import { Node, TransformerFactory, SourceFile, TransformationContext, createModifier, getJSDocTags, JSDocTag, createModifiersFromModifierFlags, FunctionDeclaration, SyntaxKind, isJSDocParameterTag, MethodDeclaration, visitEachChild, isModuleDeclaration } from 'typescript';
 
 type Visitor = (node: Node) => Node;
 
@@ -10,17 +10,10 @@ type Visitor = (node: Node) => Node;
  * @param visitor The visitor function
  * @return The updated node reference
  */
-export function visitNodeAndChildren(node: SourceFile, visitor: Visitor): SourceFile;
-export function visitNodeAndChildren(node: Node, visitor: Visitor): Node;
-export function visitNodeAndChildren(node: Node, visitor: Visitor): Node {
-    if (!node.getSourceFile()) {
-        return node;
-    }
-    visitor(node);
-    forEachChild(node, (child: Node) => {
-        visitNodeAndChildren(child, visitor);
-    });
-    return node;
+export function visitNodeAndChildren(node: SourceFile, visitor: Visitor, context: TransformationContext): SourceFile;
+export function visitNodeAndChildren(node: Node, visitor: Visitor, context: TransformationContext): Node;
+export function visitNodeAndChildren(node: Node, visitor: Visitor, context: TransformationContext): Node {
+    return visitEachChild(visitor(node), (childNode) => visitNodeAndChildren(childNode, visitor, context), context);
 }
 
 /**
@@ -29,7 +22,7 @@ export function visitNodeAndChildren(node: Node, visitor: Visitor): Node {
  * @return A transformer function
  */
 export function createTransformer(visitor: Visitor): TransformerFactory<SourceFile> {
-    return (context: TransformationContext) => (file: SourceFile) => visitNodeAndChildren(file, visitor);
+    return (context: TransformationContext) => (file: SourceFile) => visitNodeAndChildren(file, visitor, context);
 }
 
 /**
@@ -60,7 +53,7 @@ export function getTagsByName(node: Node, name: string): ReadonlyArray<JSDocTag>
  * @return The JSDoc tag reference
  */
 export function getTagByName(node: Node, name: string): JSDocTag {
-    let tags = getJSDocTags(getOriginalNode(node)) || [];
+    let tags = getJSDocTags(node) || [];
     return tags.find((tag) => tag.tagName.escapedText === name);
 }
 
@@ -72,7 +65,7 @@ export function getTagByName(node: Node, name: string): JSDocTag {
 export function getNodeDescription(node: Node & { jsDoc?: any[] }): string {
     let comments = node.jsDoc || [];
     let comment = comments[comments.length - 1];
-    if (!comment) {
+    if (!comment || !comment.comment) {
         return null;
     }
     return comment.comment.replace(/[ ]*\*/g, '');
@@ -139,6 +132,9 @@ export function addModifier(node: Node, kind: number) {
  * @param node The node to check
  */
 export function isExported(node: Node): boolean {
+    if (node.parent && node.parent.parent && isModuleDeclaration(node.parent.parent)) {
+        return true;
+    }
     if (!node.modifiers) {
         return false;
     }

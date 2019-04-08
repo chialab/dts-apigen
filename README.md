@@ -27,7 +27,8 @@ This tool aims to offer a set of utils to generate `.d.ts` files starting from J
 
 ## Known issues
 
-* Impost as namespace is not currently implemented in `api-extractor` (see [#1029](https://github.com/Microsoft/web-build-tools/issues/1029))
+* Import as namespace is not currently implemented in `api-extractor` (see [#1029](https://github.com/Microsoft/web-build-tools/issues/1029))
+* Namespace references are not correclt bundled (see [#946](https://github.com/Microsoft/web-build-tools/issues/946))
 * The TypeScript version is ~3.1.6 because of the `api-extractor` dependency
 
 ## Usage
@@ -109,11 +110,13 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @access
 * @async
 * @const
+* @namespace
 * @param
 * @private
 * @protected
 * @readonly
 * @return
+* @typedef
 
 ### Partially supported tags
 * @kind
@@ -141,7 +144,6 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @mixin
 * @module
 * @name
-* @namespace
 * @package
 * @property (synonyms: @prop)
 * @requires
@@ -149,7 +151,6 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @static
 * @this
 * @type
-* @typedef
 * @variation
 * @yields (synonyms: @yield)
 
