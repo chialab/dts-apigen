@@ -25,6 +25,11 @@ TypeScript is a powerful tool, but at the moment of writing, [it prevents declar
 
 This tool aims to offer a set of utils to generate `.d.ts` files starting from JS modules using JSDoc ([checkout](#supported-tags) the supported tags list) to fill typings informations. It also provides a method to generate a single bundled declaration file using the [`@microsoft/api-extractor`](https://api-extractor.com/) package, useful for JS libraries and Api documentation.
 
+## Known issues
+
+* Impost as namespace is not currently implemented in `api-extractor` (see [#1029](https://github.com/Microsoft/web-build-tools/issues/1029))
+* The TypeScript version is ~3.1.6 because of the `api-extractor` dependency
+
 ## Usage
 
 ### Via CLI
