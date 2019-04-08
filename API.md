@@ -115,9 +115,9 @@ A list of template factories for documentation generation.
 
 **Type:**
 
-<code><pre>{
+<pre>{
 &nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;[TemplateFactory](#TemplateFactory)<[TemplateOptions](#TemplateOptions)>;
-}</pre></code>
+}</pre>
 
 
 ---
@@ -130,7 +130,7 @@ The full list of JSDoc transformers.
 
 **Type:**
 
-<code><pre>TransformerFactory<SourceFile>[]</pre></code>
+<pre>TransformerFactory<SourceFile>[]</pre>
 
 
 ---
@@ -142,11 +142,11 @@ Implements the typescript EmitResult with some extra fields like `dts`, `package
 
 
 
-<code><pre>EmitResult&nbsp;&&nbsp;{
+<pre>EmitResult&nbsp;&&nbsp;{
 &nbsp;&nbsp;&nbsp;&nbsp;dts:&nbsp;ReadonlyArray<SourceFile>;
 &nbsp;&nbsp;&nbsp;&nbsp;packageJsonPath:&nbsp;string;
 &nbsp;&nbsp;&nbsp;&nbsp;packageJson:&nbsp;IPackageJson;
-}</pre></code>
+}</pre>
 
 
 ---
@@ -157,7 +157,7 @@ A function that generate documentation using source files, package json data and
 
 
 
-<code><pre>(sourceFiles:&nbsp;SourceFile[],&nbsp;packageJson:&nbsp;IPackageJson,&nbsp;options:&nbsp;T):&nbsp;void</pre></code>
+<pre>(sourceFiles:&nbsp;SourceFile[],&nbsp;packageJson:&nbsp;IPackageJson,&nbsp;options:&nbsp;T):&nbsp;void</pre>
 
 
 ---
@@ -169,7 +169,7 @@ The options to pass to the template generator.
 
 
 
-<code><pre>{
+<pre>{
 &nbsp;&nbsp;&nbsp;&nbsp;out:&nbsp;string;
 &nbsp;&nbsp;&nbsp;&nbsp;[key:&nbsp;string]:&nbsp;any;
-}</pre></code>
+}</pre>

@@ -212,7 +212,7 @@ ${samples.join('\n\n')}` : ''}
 ${instanceProperties.length ? `#### Properties
 
 | Name | Type | Readonly | Description |
-| ---- | ---- | :------: | ----------- |
+| :--- | :--- | :------: | :---------- |
 ${instanceProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, types, options).replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getNodeDescription(prop) || ''} |`).join('\n')}
 ` : ''}
 
@@ -224,7 +224,7 @@ ${Object.values(instanceMethods).map((methodList) => generateMethod(methodList, 
 ${staticProperties.length ? `#### Static properties
 
 | Name | Type | Readonly | Description |
-| ---- | ---- | :------: | ----------- |
+| :--- | :--- | :------: | :---------- |
 ${staticProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, types, options).replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getNodeDescription(prop) || ''} |`).join('\n')}
 ` : ''}
 
@@ -276,7 +276,7 @@ ${samples.length ? `#### Examples
 
 ${samples.join('\n\n')}` : ''}
 
-${constant.type ? `**Type:**\n\n<code><pre>${renderType(constant.type, types, options).replace(/ /g, '&nbsp;')}</pre></code>` : ''}
+${constant.type ? `**Type:**\n\n<pre>${renderType(constant.type, types, options).replace(/ /g, '&nbsp;')}</pre>` : ''}
 `;
 }
 
@@ -297,7 +297,7 @@ ${samples.length ? `#### Examples
 
 ${samples.join('\n\n')}` : ''}
 
-<code><pre>${declarations.replace(/ /g, '&nbsp;')}</pre></code>
+<pre>${declarations.replace(/ /g, '&nbsp;')}</pre>
 `;
 }
 
