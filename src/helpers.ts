@@ -135,6 +135,17 @@ export function addModifier(node: Node, kind: number) {
 }
 
 /**
+ * Check if a Node is exported
+ * @param node The node to check
+ */
+export function isExported(node: Node): boolean {
+    if (!node.modifiers) {
+        return false;
+    }
+    return node.modifiers.some((mod) => mod.kind === SyntaxKind.ExportKeyword);
+}
+
+/**
  * Recursively remove a directory
  * @param dirName The directory to delete
  */

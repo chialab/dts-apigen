@@ -1,7 +1,7 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, ArrayTypeNode, TypeReferenceNode, UnionTypeNode, ParenthesizedTypeNode, NodeArray, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode } from 'typescript';
-import { ensureFile, getParamDescription, getReturnDescription, getNodeDescription, getNodeExamples } from '../helpers';
+import { ensureFile, getParamDescription, getReturnDescription, getNodeDescription, getNodeExamples, isExported } from '../helpers';
 import { TemplateOptions } from './index';
 import { IPackageJson } from '@microsoft/node-core-library';
 
@@ -132,7 +132,12 @@ function toLink(label: string, node: Node, options: MarkdownTemplateOptions, use
     return `[${label}](#${(node as any).name.getText()})`
 }
 
-function generateIndex(modules: ModuleDeclaration[], classes: ClassDeclaration[], methods: { [key: string]: FunctionDeclaration[] }, constants: VariableDeclaration[], types: Array<TypeAliasDeclaration|InterfaceDeclaration>, packageJson: IPackageJson, options: MarkdownTemplateOptions) {
+function generateIndex(modules: ModuleDeclaration[], classes: ClassDeclaration[], methods: { [key: string]: FunctionDeclaration[] }, constants: VariableDeclaration[], types: Array<TypeAliasDeclaration | InterfaceDeclaration>, packageJson: IPackageJson, options: MarkdownTemplateOptions) {
+    classes = classes.filter((clazz) => isExported(clazz));
+    constants = constants.filter((constant) => isExported(constant.parent.parent));
+    types = types.filter((type) => isExported(type));
+    let methodsList = Object.values(methods).filter((methodList) => isExported(methodList[0]));
+
     return `# ${packageJson.name}
 
 ## Summary
@@ -147,10 +152,10 @@ ${classes.length ? `
 
 ${classes.map((clazz) => toLink(clazz.name.getText(), clazz, options)).join(', ')}` : ''}
 
-${Object.values(methods).length ? `
+${methodsList.length ? `
 **Methods**
 
-${Object.values(methods).map((methodDeclarationList) => toLink(methodDeclarationList[0].name.getText(), methodDeclarationList[0], options)).join(', ')}` : ''}
+${methodsList.map((methodDeclarationList) => toLink(methodDeclarationList[0].name.getText(), methodDeclarationList[0], options)).join(', ')}` : ''}
 
 ${constants.length ? `
 **Constants**
