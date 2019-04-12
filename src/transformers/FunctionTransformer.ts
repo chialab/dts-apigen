@@ -8,7 +8,11 @@ function handleParam(node: FunctionExpression, param: ParameterDeclaration) {
         return param;
     }
     if (!originalParam.type && jsDocParam.typeExpression) {
-        param.type = jsDocParam.typeExpression.type;
+        if (jsDocParam.typeExpression.type.kind === SyntaxKind.JSDocAllType) {
+            param.type = createKeywordTypeNode(SyntaxKind.AnyKeyword);
+        } else {
+            param.type = jsDocParam.typeExpression.type;
+        }
     }
     if (!originalParam.questionToken && jsDocParam.isBracketed) {
         param.questionToken = createToken(SyntaxKind.QuestionToken);
@@ -38,7 +42,11 @@ function handleReturn(node: FunctionExpression) {
         jsDocType = type;
     }
     if (jsDocType) {
-        node.type = jsDocType;
+        if (jsDocType.kind === SyntaxKind.JSDocAllType) {
+            node.type = createKeywordTypeNode(SyntaxKind.AnyKeyword);
+        } else {
+            node.type = jsDocType;
+        }
     }
 }
 

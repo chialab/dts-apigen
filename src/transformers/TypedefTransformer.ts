@@ -1,6 +1,5 @@
-import { Node, SyntaxKind, SourceFile, forEachChild, JSDoc, createTypeAliasDeclaration, JSDocTypedefTag, createTypeLiteralNode, createTypeReferenceNode, createPropertySignature, isJSDocTypeLiteral, createKeywordTypeNode } from 'typescript';
+import { Node, SyntaxKind, SourceFile, forEachChild, JSDoc, createTypeAliasDeclaration, JSDocTypedefTag, createTypeLiteralNode, createTypeReferenceNode, createPropertySignature, isJSDocTypeLiteral, createKeywordTypeNode, createToken } from 'typescript';
 import { getOriginalNode, createTransformer, getTagsByName } from '../helpers';
-import { Token } from '@microsoft/tsdoc';
 
 function innerVistor(node: Node): JSDoc[] {
     let tags = getTagsByName(node, 'typedef').map((tag) => tag.parent as JSDoc);
@@ -25,7 +24,7 @@ export function visitor(node: Node): Node {
                 if (isJSDocTypeLiteral(typeExpression)) {
                     let properties = typeExpression.jsDocPropertyTags;
                     type = createTypeLiteralNode(
-                        properties.map((prop) => createPropertySignature([], prop.name.getText(), prop.isBracketed ? Token[SyntaxKind.QuestionToken] : undefined, prop.typeExpression.type.kind === SyntaxKind.JSDocAllType ? createKeywordTypeNode(SyntaxKind.AnyKeyword) : prop.typeExpression.type, undefined))
+                        properties.map((prop) => createPropertySignature([], prop.name.getText(), prop.isBracketed ? createToken(SyntaxKind.QuestionToken) : undefined, prop.typeExpression.type.kind === SyntaxKind.JSDocAllType ? createKeywordTypeNode(SyntaxKind.AnyKeyword) : prop.typeExpression.type, undefined))
                     );
                 } else {
                     type = typeExpression.type || createTypeReferenceNode('Object', []);
