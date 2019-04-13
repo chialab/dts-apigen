@@ -53,6 +53,7 @@ function handleReturn(node: FunctionExpression) {
 export function visitor(node: Node): Node {
     switch (node.kind) {
         case SyntaxKind.ArrowFunction:
+        case SyntaxKind.Constructor:
         case SyntaxKind.FunctionDeclaration:
         case SyntaxKind.FunctionExpression:
         case SyntaxKind.MethodDeclaration:

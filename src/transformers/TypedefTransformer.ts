@@ -1,4 +1,4 @@
-import { Node, SyntaxKind, SourceFile, forEachChild, JSDoc, createTypeAliasDeclaration, JSDocTypedefTag, createTypeLiteralNode, createTypeReferenceNode, createPropertySignature, isJSDocTypeLiteral, createKeywordTypeNode, createToken } from 'typescript';
+import { Node, SyntaxKind, SourceFile, forEachChild, JSDoc, createTypeAliasDeclaration, JSDocTypedefTag, createTypeLiteralNode, createTypeReferenceNode, createPropertySignature, isJSDocTypeLiteral, createKeywordTypeNode, createToken, updateSourceFileNode, createModifier } from 'typescript';
 import { getOriginalNode, createTransformer, getTagsByName } from '../helpers';
 
 function innerVistor(node: Node): JSDoc[] {
@@ -17,6 +17,7 @@ export function visitor(node: Node): Node {
     switch (node.kind) {
         case SyntaxKind.SourceFile: {
             let comments = innerVistor(getOriginalNode(node));
+            let typedefStatements = [];
             comments.forEach((comment) => {
                 let typedef: JSDocTypedefTag = comment.tags.find((tag) => tag.tagName.escapedText === 'typedef') as JSDocTypedefTag;
                 let typeExpression = typedef.typeExpression;
@@ -29,10 +30,10 @@ export function visitor(node: Node): Node {
                 } else {
                     type = typeExpression.type || createTypeReferenceNode('Object', []);
                 }
-                let typeDeclaration = createTypeAliasDeclaration([], [], typedef.name.escapedText as string, [], type);
-                ((node as SourceFile).statements as any).unshift(typeDeclaration);
+                let typeDeclaration = createTypeAliasDeclaration([], [createModifier(SyntaxKind.DeclareKeyword)], typedef.name.escapedText as string, [], type);
+                typedefStatements.push(typeDeclaration);
             });
-            break;
+            return updateSourceFileNode(node as SourceFile, [...typedefStatements, ...(node as SourceFile).statements], (node as SourceFile).isDeclarationFile);
         }
     }
     return node;
