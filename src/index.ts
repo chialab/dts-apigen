@@ -1,14 +1,17 @@
 import { createCompilerHost } from './Host';
 import { transformers } from './transformers/index';
 import { templates } from './templates/index';
-import { EmitResultWithDts, createProgram } from './Program';
-import { createProgram as createBundlerProgram } from './BundlerProgram';
+import { collect } from './collect';
+import { bundle } from './bundle';
+import { documentate } from './documentate';
+import { createProgram } from './Program';
 
 export {
-    EmitResultWithDts,
-    transformers,
-    templates,
     createCompilerHost,
     createProgram,
-    createBundlerProgram,
+    transformers,
+    collect,
+    bundle,
+    documentate,
+    templates,
 };

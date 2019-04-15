@@ -14,8 +14,10 @@
     "prepack": "rm -rf lib && tsc"
   },
   "dependencies": {
-    "@microsoft/api-extractor": "^7.0.0",
     "commander": "^2.19.0",
     "typescript": "~3.1.6"
+  },
+  "devDependencies": {
+    "@types/node": "^11.13.4"
   }
 }

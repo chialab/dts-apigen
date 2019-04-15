@@ -1,19 +1,8 @@
 import { existsSync } from 'fs';
-import { resolve, dirname, join } from 'path';
-import { createProgram as tsCreateProgram, CompilerOptions, CompilerHost, Program, Diagnostic, SourceFile, WriteFileCallback, CancellationToken, CustomTransformers, EmitResult, flattenDiagnosticMessageText, ScriptTarget, getPreEmitDiagnostics, ModuleKind, ModuleResolutionKind, getParsedCommandLineOfConfigFile, findConfigFile, sys } from 'typescript';
+import { resolve, join } from 'path';
+import { createProgram as tsCreateProgram, CompilerOptions, CompilerHost, Program, Diagnostic, SourceFile, WriteFileCallback, CancellationToken, CustomTransformers, flattenDiagnosticMessageText, ScriptTarget, getPreEmitDiagnostics, ModuleResolutionKind, getParsedCommandLineOfConfigFile, findConfigFile, sys } from 'typescript';
 import { createCompilerHost } from './Host';
 import { transformers } from './transformers/index';
-import { PackageJsonLookup, IPackageJson } from '@microsoft/node-core-library';
-
-/**
- * The result of the program emit
- * Implements the typescript EmitResult with some extra fields like `dts`, `packageJsonPath` and `packageJson`
- */
-export type EmitResultWithDts = EmitResult & {
-    dts: ReadonlyArray<SourceFile>;
-    packageJsonPath: string;
-    packageJson: IPackageJson;
-};
 
 /**
  * Create a TypeScript program with custom transformers and custom resolution for JS files
@@ -73,7 +62,7 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
 
     // override the default emit method in order to inject custom transformers, collect generated declaration files and analyze the output
     const originalEmit = program.emit;
-    program.emit = (targetSourceFile?: SourceFile, writeFile?: WriteFileCallback, cancellationToken?: CancellationToken, emitDeclarationOnly?: boolean, customTransformers?: CustomTransformers): EmitResultWithDts => {
+    program.emit = (targetSourceFile?: SourceFile, writeFile?: WriteFileCallback, cancellationToken?: CancellationToken, emitDeclarationOnly?: boolean, customTransformers?: CustomTransformers) => {
         // setup custom transformers
         customTransformers = customTransformers || {};
         customTransformers.afterDeclarations = customTransformers.afterDeclarations || [];
@@ -88,7 +77,7 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
         };
 
         // call the original emit method and print diagnostic
-        const result: EmitResultWithDts = originalEmit.call(program, targetSourceFile, collectWriteFile, cancellationToken, true, customTransformers);
+        const result = originalEmit.call(program, targetSourceFile, collectWriteFile, cancellationToken, true, customTransformers);
         const allDiagnostics = getPreEmitDiagnostics(program).concat(result.diagnostics);
         if (result.emitSkipped) {
             allDiagnostics.forEach((diagnostic) => {
@@ -104,19 +93,6 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
             });
             throw new Error('emit skipped');
         }
-
-        // load package json informations for the files (needed by api-extractor in the bundler program)
-        const lookup = new PackageJsonLookup();
-        const packageJsonPath = lookup.tryGetPackageJsonFilePathFor(dirname(result.emittedFiles[0]));
-        if (packageJsonPath) {
-            result.packageJsonPath = packageJsonPath;
-            result.packageJson = lookup.loadPackageJson(packageJsonPath);
-        }
-
-        // populate the dts map with typechecked source files
-        const extractorProgram = tsCreateProgram(result.emittedFiles, {});
-        extractorProgram.emit(undefined, () => {}, undefined, true);
-        result.dts = result.emittedFiles.map((fileName) => extractorProgram.getSourceFile(fileName));
 
         return result;
     };

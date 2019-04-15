@@ -3,7 +3,6 @@ import { join, dirname } from 'path';
 import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, isSourceFile, isIdentifier, Identifier } from 'typescript';
 import { ensureFile, getParamDescription, getReturnDescription, getNodeDescription, getNodeExamples, isExported } from '../helpers';
 import { TemplateOptions } from './index';
-import { IPackageJson } from '@microsoft/node-core-library';
 
 type MarkdownTemplateOptions = TemplateOptions & {
     mode: 'module'|'files';
@@ -455,8 +454,8 @@ ${samples.join('\n\n')}` : ''}
 `;
 }
 
-export = function markdown(sourceFiles: SourceFile[], packageJson: IPackageJson, options: MarkdownTemplateOptions) {
-    let indexContent = `# ${packageJson.name}`;
+export = function markdown(sourceFiles: SourceFile[], options: MarkdownTemplateOptions) {
+    let indexContent = '';
 
     sourceFiles.forEach((source) => {
         indexContent += `${generateSource(source, {})}`

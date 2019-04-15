@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, statSync, unlinkSync, rmdirSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { Node, TransformerFactory, SourceFile, TransformationContext, createModifier, getJSDocTags, JSDocTag, createModifiersFromModifierFlags, FunctionDeclaration, SyntaxKind, isJSDocParameterTag, MethodDeclaration, visitEachChild, isModuleDeclaration } from 'typescript';
+import { Node, TransformerFactory, SourceFile, TransformationContext, createModifier, getJSDocTags, JSDocTag, createModifiersFromModifierFlags, FunctionDeclaration, SyntaxKind, isJSDocParameterTag, MethodDeclaration, visitEachChild, isModuleDeclaration, Modifier } from 'typescript';
 
 type Visitor = (node: Node) => Node;
 
@@ -124,6 +124,24 @@ export function addModifier(node: Node, kind: number) {
         (node.modifiers as any).end = -1;
     }
     (node.modifiers as any).push(modifier);
+    delete node['modifierFlagsCache'];
+}
+
+/**
+ * Remove a modifier for a node
+ * @param node The node to update
+ * @param kind THe kind of the modifier to remove
+ */
+export function removeModifier(node: Node, kind: number) {
+    if (!node.modifiers) {
+        return;
+    }
+    let list: Modifier[] = (node.modifiers as any);
+    let modifier = list.find((modifier) => modifier.kind === kind);
+    if (!modifier) {
+        return;
+    }
+    list.splice(list.indexOf(modifier), 1);
     delete node['modifierFlagsCache'];
 }
 

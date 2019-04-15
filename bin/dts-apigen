@@ -2,7 +2,7 @@
 
 const cli = require('commander');
 const json = require('../package.json');
-const { createProgram, createBundlerProgram, templates } = require('../lib/index.js');
+const { createProgram, bundle, templates } = require('../lib/index.js');
 
 cli.version(json.version);
 
@@ -22,13 +22,7 @@ cli
     .description('Bundle all declaration files into a single .d.ts file')
     .option('-O, --out <file>', 'Output file for declaration file bundle.')
     .action((file, options) => {
-        if (!options.out) {
-            throw new Error('missing `out` option');
-        }
-        let program = createBundlerProgram([file], {
-            outputFile: options.out,
-        });
-        program.emit();
+        bundle([file], options.out);
     });
 
 cli

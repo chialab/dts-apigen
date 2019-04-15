@@ -1,6 +1,5 @@
 import markdown = require('./markdown');
 import { SourceFile } from 'typescript';
-import { IPackageJson } from '@microsoft/node-core-library';
 
 /**
  * The options to pass to the template generator.
@@ -17,7 +16,7 @@ export type TemplateOptions = {
  * @param packageJson Package json data
  * @param options Template options
  */
-export type TemplateFactory<T extends TemplateOptions> = (sourceFiles: SourceFile[], packageJson: IPackageJson, options: T) => void;
+export type TemplateFactory<T extends TemplateOptions> = (sourceFiles: SourceFile[], options: T) => void;
 
 /**
  * A list of template factories for documentation generation.
