@@ -1,8 +1,9 @@
 import { Node, SyntaxKind, SourceFile, forEachChild, JSDoc, createTypeAliasDeclaration, JSDocTypedefTag, createTypeLiteralNode, createTypeReferenceNode, createPropertySignature, isJSDocTypeLiteral, createKeywordTypeNode, createToken, updateSourceFileNode, createModifier } from 'typescript';
-import { getOriginalNode, createTransformer, getTagsByName } from '../helpers';
+import { getOriginalNode, getJSDocTagsByName } from '../helpers/ast';
+import { createTransformer } from '../helpers/transformer';
 
 function innerVistor(node: Node): JSDoc[] {
-    let tags = getTagsByName(node, 'typedef').map((tag) => tag.parent as JSDoc);
+    let tags = getJSDocTagsByName(node, 'typedef').map((tag) => tag.parent as JSDoc);
     forEachChild(node, (child) => {
         innerVistor(child).forEach((comment) => {
             if (tags.indexOf(comment) === -1) {

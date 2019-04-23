@@ -1,29 +1,4 @@
-import { existsSync, readdirSync, statSync, unlinkSync, rmdirSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { Node, TransformerFactory, SourceFile, TransformationContext, createModifier, getJSDocTags, JSDocTag, createModifiersFromModifierFlags, FunctionDeclaration, SyntaxKind, isJSDocParameterTag, MethodDeclaration, visitEachChild, isModuleDeclaration, Modifier } from 'typescript';
-
-type Visitor = (node: Node) => Node;
-
-/**
- * Recursively visit AST nodes
- * @param node The node to iterate
- * @param visitor The visitor function
- * @return The updated node reference
- */
-export function visitNodeAndChildren(node: SourceFile, visitor: Visitor, context: TransformationContext): SourceFile;
-export function visitNodeAndChildren(node: Node, visitor: Visitor, context: TransformationContext): Node;
-export function visitNodeAndChildren(node: Node, visitor: Visitor, context: TransformationContext): Node {
-    return visitEachChild(visitor(node), (childNode) => visitNodeAndChildren(childNode, visitor, context), context);
-}
-
-/**
- * Create a transformer from a visitor function
- * @param visitor The visitor function
- * @return A transformer function
- */
-export function createTransformer(visitor: Visitor): TransformerFactory<SourceFile> {
-    return (context: TransformationContext) => (file: SourceFile) => visitNodeAndChildren(file, visitor, context);
-}
+import { Node, getJSDocTags, JSDocTag, FunctionDeclaration, MethodDeclaration, isJSDocParameterTag, SyntaxKind, createModifier, createModifiersFromModifierFlags, Modifier, isModuleDeclaration } from 'typescript';
 
 /**
  * Get the original typeched node of a node
@@ -41,7 +16,7 @@ export function getOriginalNode(node: Node & { original?: Node }): Node {
  * @param name The tag name
  * @return The JSDoc tags list
  */
-export function getTagsByName(node: Node, name: string): ReadonlyArray<JSDocTag> {
+export function getJSDocTagsByName(node: Node, name: string): ReadonlyArray<JSDocTag> {
     let tags = getJSDocTags(getOriginalNode(node)) || [];
     return tags.filter((tag) => tag.tagName.escapedText === name);
 }
@@ -52,7 +27,7 @@ export function getTagsByName(node: Node, name: string): ReadonlyArray<JSDocTag>
  * @param name The tag name
  * @return The JSDoc tag reference
  */
-export function getTagByName(node: Node, name: string): JSDocTag {
+export function getJSDocTagByName(node: Node, name: string): JSDocTag {
     let tags = getJSDocTags(node) || [];
     return tags.find((tag) => tag.tagName.escapedText === name);
 }
@@ -62,7 +37,7 @@ export function getTagByName(node: Node, name: string): JSDocTag {
  * @param node The scope node
  * @return The description of the node
  */
-export function getNodeDescription(node: Node & { jsDoc?: any[] }): string {
+export function getJSDocDescription(node: Node & { jsDoc?: any[] }): string {
     let comments = node.jsDoc || [];
     let comment = comments[comments.length - 1];
     if (!comment || !comment.comment) {
@@ -76,8 +51,8 @@ export function getNodeDescription(node: Node & { jsDoc?: any[] }): string {
  * @param node The scope node
  * @return A list of examples for the node
  */
-export function getNodeExamples(node: Node & { jsDoc?: any[] }): string[] {
-    let tags = getTagsByName(node, 'example') || [];
+export function getJSDocExamples(node: Node & { jsDoc?: any[] }): string[] {
+    let tags = getJSDocTagsByName(node, 'example') || [];
     return tags.map((tag) => tag.comment.replace(/[ ]*\*/g, ''));
 }
 
@@ -87,7 +62,7 @@ export function getNodeExamples(node: Node & { jsDoc?: any[] }): string[] {
  * @param paramName The param name to retrieve
  * @return The description of the parameter
  */
-export function getParamDescription(node: FunctionDeclaration|MethodDeclaration, paramName: string): string {
+export function getJSDocParamDescription(node: FunctionDeclaration|MethodDeclaration, paramName: string): string {
     let tags = getJSDocTags(getOriginalNode(node)) || [];
     let tag = tags.find((tag) => isJSDocParameterTag(tag) && tag.name.getText() === paramName);
     if (!tag) {
@@ -101,7 +76,7 @@ export function getParamDescription(node: FunctionDeclaration|MethodDeclaration,
  * @param node The function node reference
  * @return The description of the return statement
  */
-export function getReturnDescription(node: FunctionDeclaration|MethodDeclaration): string {
+export function getJSDocReturnDescription(node: FunctionDeclaration|MethodDeclaration): string {
     let tags = getJSDocTags(getOriginalNode(node)) || [];
     let tag = tags.find((tag) => tag.kind === SyntaxKind.JSDocReturnTag);
     if (!tag) {
@@ -169,36 +144,4 @@ export function isExported(node: Node): boolean {
         return false;
     }
     return node.modifiers.some((mod) => mod.kind === SyntaxKind.ExportKeyword);
-}
-
-/**
- * Recursively remove a directory
- * @param dirName The directory to delete
- */
-export function rmdir(dirName: string) {
-    if (existsSync(dirName)) {
-        let files = readdirSync(dirName);
-        files.forEach((fileName) => {
-            let filePath = join(dirName, fileName);
-            let stat = statSync(filePath);
-            if (stat.isFile()) {
-                unlinkSync(filePath);
-            } else if (stat.isDirectory()) {
-                rmdir(filePath);
-            }
-        });
-        rmdirSync(dirName);
-    }
-}
-
-/**
- * Ensure that a file is writable creating missing paths
- * @param fileName The name of the file
- */
-export function ensureFile(fileName: string) {
-    let dirName = dirname(fileName);
-    if (!existsSync(dirName)) {
-        ensureFile(dirName);
-        mkdirSync(dirName);
-    }
 }

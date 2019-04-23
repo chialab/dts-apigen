@@ -1,6 +1,5 @@
 import { Node, SyntaxKind, ImportDeclaration, isStringLiteral, createStringLiteral } from 'typescript';
-import { createTransformer } from '../helpers';
-import { basename, extname, dirname, join } from 'path';
+import { createTransformer } from '../helpers/transformer';
 
 export function visitor(node: Node): Node {
     switch (node.kind) {

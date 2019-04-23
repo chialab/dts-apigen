@@ -1,7 +1,8 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, isSourceFile, isIdentifier, Identifier } from 'typescript';
-import { ensureFile, getParamDescription, getReturnDescription, getNodeDescription, getNodeExamples, isExported } from '../helpers';
+import { ensureFile } from '../helpers/fs';
+import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, isExported } from '../helpers/ast';
 import { TemplateOptions } from './index';
 
 type MarkdownTemplateOptions = TemplateOptions & {
@@ -305,7 +306,7 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
 }
 
 function generateNamespace(ns: ModuleDeclaration, references, options) {
-    let description = getNodeDescription(ns);
+    let description = getJSDocDescription(ns);
     return `### ${ns.name.getText()}
 
 ${description || ''}
@@ -318,8 +319,8 @@ function generateSource(source: SourceFile, options) {
 }
 
 function generateClass(clazz: ClassDeclaration, references, options) {
-    let description = getNodeDescription(clazz);
-    let samples = getNodeExamples(clazz);
+    let description = getJSDocDescription(clazz);
+    let samples = getJSDocExamples(clazz);
     let instanceProperties: PropertyDeclaration[] = [];
     let staticProperties: PropertyDeclaration[] = [];
     clazz.members
@@ -365,7 +366,7 @@ ${instanceProperties.length ? `**Properties**
 
 | Name | Type | Readonly | Description |
 | :--- | :--- | :------: | :---------- |
-${instanceProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getNodeDescription(prop) || ''} |`).join('\n')}
+${instanceProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getJSDocDescription(prop) || ''} |`).join('\n')}
 ` : ''}
 
 ${Object.keys(instanceMethods).length ? `**Methods**
@@ -377,7 +378,7 @@ ${staticProperties.length ? `**Static properties**
 
 | Name | Type | Readonly | Description |
 | :--- | :--- | :------: | :---------- |
-${staticProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getNodeDescription(prop) || ''} |`).join('\n')}
+${staticProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getJSDocDescription(prop) || ''} |`).join('\n')}
 ` : ''}
 
 ${Object.keys(staticMethods).length ? `**Static methods**
@@ -389,8 +390,8 @@ ${Object.values(staticMethods).map((methodList) => generateMethod(methodList, re
 
 function generateMethod(methodDeclarationList: (FunctionDeclaration|MethodDeclaration)[], references, options: MarkdownTemplateOptions) {
     let name = methodDeclarationList[0].name.getText();
-    let description = getNodeDescription(methodDeclarationList[0]);
-    let samples = getNodeExamples(methodDeclarationList[0]);
+    let description = getJSDocDescription(methodDeclarationList[0]);
+    let samples = getJSDocExamples(methodDeclarationList[0]);
     return `### ${name}
 
 ${description ? description.trim() : ''}
@@ -405,10 +406,10 @@ ${method.parameters.length ? `**Params**
 | Name | Type | Optional | Description |
 | ---- | ---- | :------: | ----------- |
 ${method.parameters
-        .map((param) => `| ${param.name.getText()} | <code>${renderType(param.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|').replace(/\n/g, ' ')}</code> | ${param.questionToken ? '✓' : ''} | ${getParamDescription(methodDeclarationList[0], param.name.getText()) || ''} |`)
+        .map((param) => `| ${param.name.getText()} | <code>${renderType(param.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|').replace(/\n/g, ' ')}</code> | ${param.questionToken ? '✓' : ''} | ${getJSDocParamDescription(methodDeclarationList[0], param.name.getText()) || ''} |`)
         .join('\n')}` : ''}
 
-**Returns**: <code>${renderType(method.type, references, options).replace(/\n/g, ' ')}</code> ${getReturnDescription(methodDeclarationList[0]) || ''}
+**Returns**: <code>${renderType(method.type, references, options).replace(/\n/g, ' ')}</code> ${getJSDocReturnDescription(methodDeclarationList[0]) || ''}
 
 </details>`).join('\n')}
 
@@ -419,8 +420,8 @@ ${samples.join('\n\n')}` : ''}
 }
 
 function generateConstant(constant: VariableDeclaration, references, options) {
-    let description = getNodeDescription(constant) || getNodeDescription(constant.parent.parent);
-    let samples = getNodeExamples(constant);
+    let description = getJSDocDescription(constant) || getJSDocDescription(constant.parent.parent);
+    let samples = getJSDocExamples(constant);
     return `### ${constant.name.getText()}
 
 ${description ? description.trim() : ''}
@@ -434,8 +435,8 @@ ${constant.type ? `**Type:**\n\n<pre>${renderType(constant.type, references, opt
 }
 
 function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, references, options) {
-    let description = getNodeDescription(type);
-    let samples = getNodeExamples(type);
+    let description = getJSDocDescription(type);
+    let samples = getJSDocExamples(type);
     let declarations;
     if (isTypeAliasDeclaration(type)) {
         declarations = renderType(type.type, references, options);

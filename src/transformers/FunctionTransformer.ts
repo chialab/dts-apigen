@@ -1,5 +1,6 @@
 import { SyntaxKind, Node, FunctionExpression, ParameterDeclaration, getJSDocReturnType, getJSDocParameterTags, createToken, VariableDeclaration, createFunctionTypeNode, createTypeReferenceNode, createIdentifier, createKeywordTypeNode } from 'typescript';
-import { getOriginalNode, createTransformer, getTagByName } from '../helpers';
+import { getOriginalNode, getJSDocTagByName } from '../helpers/ast';
+import { createTransformer } from '../helpers/transformer';
 
 function handleParam(node: FunctionExpression, param: ParameterDeclaration) {
     let originalParam = getOriginalNode(param) as ParameterDeclaration;
@@ -35,7 +36,7 @@ function handleReturn(node: FunctionExpression) {
         return node;
     }
     let jsDocType = getJSDocReturnType(originalNode);
-    if (!jsDocType && getTagByName(originalNode, 'async')) {
+    if (!jsDocType && getJSDocTagByName(originalNode, 'async')) {
         let anyType = createKeywordTypeNode(SyntaxKind.AnyKeyword);
         let idType = createIdentifier('Promise');
         let type = createTypeReferenceNode(idType, [anyType]);

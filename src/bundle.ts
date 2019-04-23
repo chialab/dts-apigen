@@ -1,7 +1,8 @@
 import { writeFileSync } from 'fs';
 import { createPrinter, EmitHint, isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createVariableDeclaration, createVariableStatement, createModifier, createVariableDeclarationList, NodeFlags, createExportDeclaration, createNamedExports, createExportSpecifier, isSourceFile, createTypeLiteralNode, createPropertySignature, createTypeQueryNode, TypeChecker } from 'typescript';
 import { ReferencesMap, collect } from './collect';
-import { ensureFile, removeModifier, addModifier, hasModifier } from './helpers';
+import { ensureFile } from './helpers/fs';
+import { removeModifier, addModifier, hasModifier } from './helpers/ast';
 
 function renameSymbol(typechecker: TypeChecker, symbol: Symbol, references: ReferencesMap, collected: string[], suggested?: string) {
     let baseName = suggested || (symbol.getDeclarations()[0] as any).name.escapedText;
