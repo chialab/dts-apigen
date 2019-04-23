@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 const cli = require('commander');
+const { writeFileSync } = require('fs');
 const json = require('../package.json');
-const { generate, bundle, templates } = require('../lib/index.js');
+const { generate, bundle, printFile, templates } = require('../lib/index.js');
+const { ensureFile } = require('../lib/helpers/fs');
 
 cli.version(json.version);
 
@@ -24,7 +26,12 @@ cli
         if (!options.out) {
             throw new Error('missing `out` option');
         }
-        bundle(file, options.out);
+        const resultFile = bundle(file);
+        if (options.out) {
+            const code = printFile(resultFile);
+            ensureFile(options.out);
+            writeFileSync(options.out, code);
+        }
     });
 
 cli

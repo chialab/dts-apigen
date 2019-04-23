@@ -1,7 +1,5 @@
-import { writeFileSync } from 'fs';
-import { createPrinter, EmitHint, isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createVariableDeclaration, createVariableStatement, createModifier, createVariableDeclarationList, NodeFlags, createExportDeclaration, createNamedExports, createExportSpecifier, isSourceFile, createTypeLiteralNode, createPropertySignature, createTypeQueryNode, TypeChecker, createSourceFile, ScriptTarget, ScriptKind } from 'typescript';
+import { isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createVariableDeclaration, createVariableStatement, createModifier, createVariableDeclarationList, NodeFlags, createExportDeclaration, createNamedExports, createExportSpecifier, isSourceFile, createTypeLiteralNode, createPropertySignature, createTypeQueryNode, createSourceFile, ScriptTarget, ScriptKind, updateSourceFileNode, Statement } from 'typescript';
 import { ReferencesMap, collect } from './collect';
-import { ensureFile } from './helpers/fs';
 import { removeModifier, addModifier, hasModifier } from './helpers/ast';
 
 function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: string[], suggested?: string) {
@@ -35,11 +33,9 @@ function getOriginalSymbolName(symbol: Symbol) {
     return symbol.getName();
 }
 
-export function bundle(fileName: string, output?: string) {
+export function bundle(fileName: string) {
     const { typechecker, symbols, references, exported } = collect(fileName);
-    const printer = createPrinter();
-    const resultFile = createSourceFile(output, '', ScriptTarget.Latest, false, ScriptKind.TS);
-    const blocks: string[] = [];
+    const statements: Statement[] = [];
     const collected: string[] = exported
         .filter((symbol) => {
             if (symbols.includes(symbol)) {
@@ -83,11 +79,7 @@ export function bundle(fileName: string, output?: string) {
                     return node;
                 })
                 .forEach((node) => {
-                    blocks.push(printer.printNode(
-                        EmitHint.Unspecified,
-                        node,
-                        resultFile
-                    ));
+                    statements.push(node as Statement);
                 });
         }
     });
@@ -123,16 +115,7 @@ export function bundle(fileName: string, output?: string) {
         if (!node) {
             return;
         }
-        blocks.push(printer.printNode(
-            EmitHint.Unspecified,
-            node,
-            resultFile
-        ));
+        statements.push(node as Statement);
     });
-    const code = blocks.join('\n\n');
-    if (output) {
-        ensureFile(output);
-        writeFileSync(output, code);
-    }
-    return code;
+    return updateSourceFileNode(createSourceFile('bundle.d.ts', '', ScriptTarget.Latest, false, ScriptKind.TS), statements, true);
 }

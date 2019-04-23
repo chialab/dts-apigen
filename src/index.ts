@@ -5,6 +5,7 @@ import { generate } from './generate';
 import { collect } from './collect';
 import { bundle } from './bundle';
 import { documentate } from './documentate';
+import { printFile } from './printer';
 import { createProgram } from './Program';
 
 export {
@@ -16,4 +17,5 @@ export {
     bundle,
     documentate,
     templates,
+    printFile,
 };
