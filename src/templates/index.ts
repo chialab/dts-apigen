@@ -16,7 +16,7 @@ export type TemplateOptions = {
  * @param packageJson Package json data
  * @param options Template options
  */
-export type TemplateFactory<T extends TemplateOptions> = (sourceFiles: SourceFile[], options: T) => void;
+export type TemplateFactory<T extends TemplateOptions> = (sourceFile: SourceFile, options: T) => void;
 
 /**
  * A list of template factories for documentation generation.

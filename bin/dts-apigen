@@ -2,8 +2,9 @@
 
 const cli = require('commander');
 const { writeFileSync } = require('fs');
+const { createPrinter } = require('typescript');
 const json = require('../package.json');
-const { generate, bundle, printFile, templates } = require('../lib/index.js');
+const { generate, bundle, templates } = require('../lib/index.js');
 const { ensureFile } = require('../lib/helpers/fs');
 
 cli.version(json.version);
@@ -28,7 +29,7 @@ cli
         }
         const resultFile = bundle(file);
         if (options.out) {
-            const code = printFile(resultFile);
+            const code = createPrinter().printFile(resultFile);
             ensureFile(options.out);
             writeFileSync(options.out, code);
         }
@@ -44,13 +45,12 @@ cli
         if (!options.out) {
             throw new Error('missing `out` option');
         }
-        let program = createBundlerProgram([file], {});
-        let result = program.emit();
+        const resultFile = bundle(file);
         let template = templates.markdown;
         if (options.template) {
             template = require(out.template);
         }
-        template(result.dts, result.packageJson, options);
+        template(resultFile, options);
     });
 
 cli.on('command:*', () => {

@@ -102,7 +102,7 @@ export function hasModifier(node: Node, kind: number) {
  * @param node The node to update
  * @param kind THe kind of the modifier to add
  */
-export function addModifier(node: Node, kind: number) {
+export function addModifier(node: Node, kind: number, before = false) {
     let modifier = createModifier(kind);
     modifier.parent = node;
     if (!node.modifiers) {
@@ -110,7 +110,11 @@ export function addModifier(node: Node, kind: number) {
         (node.modifiers as any).pos = -1;
         (node.modifiers as any).end = -1;
     }
-    (node.modifiers as any).push(modifier);
+    if (before) {
+        (node.modifiers as any).unshift(modifier);
+    } else {
+        (node.modifiers as any).push(modifier);
+    }
     delete node['modifierFlagsCache'];
 }
 

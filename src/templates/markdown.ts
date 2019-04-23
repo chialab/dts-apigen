@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, isSourceFile, isIdentifier, Identifier } from 'typescript';
+import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, isSourceFile, isIdentifier, Identifier, isTupleTypeNode } from 'typescript';
 import { ensureFile } from '../helpers/fs';
 import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, isExported } from '../helpers/ast';
 import { TemplateOptions } from './index';
@@ -10,6 +10,10 @@ type MarkdownTemplateOptions = TemplateOptions & {
 }
 
 type FunctionDeclarations = { [key: string]: FunctionDeclaration[] };
+
+function nameToString(node): string {
+    return node.escapedText || node.getText();
+}
 
 function collectReferences(statements: NodeArray<Statement>) {
     const namespaces: ModuleDeclaration[] = [];
@@ -30,7 +34,7 @@ function collectReferences(statements: NodeArray<Statement>) {
             types.push(node);
             references.push(node);
         } else if (isFunctionDeclaration(node)) {
-            let name = node.name.getText();
+            let name = nameToString(node.name);
             methods[name] = methods[name] || [];
             methods[name].push(node);
             references.push(node);
@@ -62,8 +66,8 @@ function collectReferences(statements: NodeArray<Statement>) {
 
 function renderType(type: TypeNode|TypeElement|TypeParameterDeclaration, references: (TypeAliasDeclaration|InterfaceDeclaration)[], options: MarkdownTemplateOptions, useHtml: boolean = false): string {
     if (isTypeReferenceNode(type)) {
-        let name = type.typeName.getText();
-        let linked = references.find((item) => item.name.getText() === name);
+        let name = nameToString(type.typeName);
+        let linked = references.find((item) => nameToString(item.name) === name);
         return `${linked ? toLink(name, linked, options, useHtml) : name}${type.typeArguments ? `<${type.typeArguments.map((arg) => renderType(arg, references, options, useHtml)).join(', ')}>` : ''}`;
     }
     if (isUnionTypeNode(type)) {
@@ -85,48 +89,51 @@ ${type.members.map((member) => `${renderType(member, references, options, useHtm
     }
     if (isIndexSignatureDeclaration(type)) {
         let param = type.parameters[0];
-        return `[${param.name.getText()}: ${renderType(param.type, references, options, useHtml)}]: ${renderType(type.type, references, options, useHtml)}`;
+        return `[${nameToString(param.name)}: ${renderType(param.type, references, options, useHtml)}]: ${renderType(type.type, references, options, useHtml)}`;
     }
     if (isPropertySignature(type)) {
-        return `${type.name.getText()}${type.questionToken ? '?' : ''}: ${renderType(type.type, references, options, useHtml)}`;
+        return `${nameToString(type.name)}${type.questionToken ? '?' : ''}: ${renderType(type.type, references, options, useHtml)}`;
     }
     if (isFunctionTypeNode(type)) {
         return `(${
-            type.parameters.map((param) => `${param.name.getText()}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, useHtml)}`).join(', ')
+            type.parameters.map((param) => `${nameToString(param.name)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, useHtml)}`).join(', ')
         }): ${renderType(type.type, references, options, useHtml)}`;
     }
     if (isMethodSignature(type)) {
-        return `${type.name.getText()}(${
-            type.parameters.map((param) => `${param.name.getText()}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, useHtml)}`).join(', ')
+        return `${nameToString(type.name)}(${
+            type.parameters.map((param) => `${nameToString(param.name)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, useHtml)}`).join(', ')
         }): ${renderType(type.type, references, options, useHtml)}`;
     }
     if (isConstructSignatureDeclaration(type)) {
         return `constructor(${
-            type.parameters.map((param) => `${param.name.getText()}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, useHtml)}`).join(', ')
+            type.parameters.map((param) => `${nameToString(param.name)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, useHtml)}`).join(', ')
         }): ${renderType(type.type, references, options, useHtml)}`;
     }
     if (isTypeQueryNode(type)) {
-        let name = type.exprName.getText();
-        let linked = references.find((item) => item.name.getText() === name);
+        let name = nameToString(type.exprName);
+        let linked = references.find((item) => nameToString(item.name) === name);
         return `${linked ? toLink(name, linked, options, useHtml) : name}`;
     }
     if (isTypeParameterDeclaration(type)) {
-        return `${type.name.getText()}${type.constraint ? ` extends ${renderType(type.constraint, references, options, useHtml)}` : ''}`;
+        return `${nameToString(type.name)}${type.constraint ? ` extends ${renderType(type.constraint, references, options, useHtml)}` : ''}`;
     }
     if (isExpressionWithTypeArguments(type)) {
-        let name = type.expression.getText();
-        let linked = references.find((item) => item.name.getText() === name);
+        let name = nameToString(type.expression);
+        let linked = references.find((item) => nameToString(item.name) === name);
         return `${linked ? toLink(name, linked, options, useHtml) : name}`;
     }
     if (isIndexedAccessTypeNode(type)) {
         return `${renderType(type.objectType, references, options, useHtml)}[${renderType(type.indexType, references, options, useHtml)}]`;
     }
+    if (isTupleTypeNode(type)) {
+        return `[${type.elementTypes.map((t) => renderType(t, references, options, useHtml)).join(', ')}]`;
+    }
     if (isLiteralTypeNode(type)) {
-        return type.literal.getText();
+        return nameToString(type.literal);
     }
     if (isConstructorTypeNode(type)) {
         return `constructor(${
-            type.parameters.map((param) => `${param.name.getText()}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, useHtml)}`).join(', ')
+            type.parameters.map((param) => `${nameToString(param.name)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, useHtml)}`).join(', ')
         }): ${renderType(type.type, references, options, useHtml)}`;
     }
     switch (type.kind) {
@@ -145,31 +152,34 @@ ${type.members.map((member) => `${renderType(member, references, options, useHtm
             return 'undefined';
         case SyntaxKind.BooleanKeyword:
             return 'boolean';
+        case SyntaxKind.ObjectKeyword:
+            return 'Object';
     }
     if (type.kind === SyntaxKind.LastTypeNode) {
-        let name = type['qualifier'].getText();
-        let linked = references.find((item) => item.name.getText() === name);
+        let name = nameToString(type['qualifier']);
+        let linked = references.find((item) => nameToString(item.name) === name);
         return `${linked ? toLink(name, linked, options, useHtml) : name}`;
     }
     if (type.kind === SyntaxKind.FirstTypeNode) {
-        let name = type['type'].getText();
-        let linked = references.find((item) => item.name.getText() === name);
-        return `${type['parameterName'].getText()} is ${linked ? toLink(name, linked, options, useHtml) : name}`;
+        let name = nameToString(type['type']);
+        let linked = references.find((item) => nameToString(item.name) === name);
+        return `${nameToString(type['parameterName'])} is ${linked ? toLink(name, linked, options, useHtml) : name}`;
     }
     console.log('unhandled type kind:', type.kind, SyntaxKind[type.kind]);
+    return '';
 }
 
 function toFile(node: Node): string {
     if (isFunctionDeclaration(node)) {
-        return `method.${node.name.getText()}.md`;
+        return `method.${nameToString(node.name)}.md`;
     } else if (isVariableDeclaration(node)) {
-        return `constant.${node.name.getText()}.md`;
+        return `constant.${nameToString(node.name)}.md`;
     } else if (isInterfaceDeclaration(node) || isTypeAliasDeclaration(node)) {
-        return `type.${node.name.getText()}.md`;
+        return `type.${nameToString(node.name)}.md`;
     } else if (isClassDeclaration(node)) {
-        return `class.${node.name.getText()}.md`;
+        return `class.${nameToString(node.name)}.md`;
     } else if (isModuleDeclaration(node)) {
-        return `namespace.${node.name.getText()}.md`;
+        return `namespace.${nameToString(node.name)}.md`;
     }
 }
 
@@ -181,9 +191,9 @@ function toLink(label: string, node: Node, options: MarkdownTemplateOptions, use
         return `[${label}](${toFile(node)})`;
     }
     if (useHtml) {
-        return `<a href="#${(node as any).name.getText()}">${label}</a>`;
+        return `<a href="#${nameToString((node as any).name)}">${label}</a>`;
     }
-    return `[${label}](#${(node as any).name.getText()})`
+    return `[${label}](#${nameToString((node as any).name)})`
 }
 
 function generateSummary(namespaces: ModuleDeclaration[], classes: ClassDeclaration[], methods: { [key: string]: FunctionDeclaration[] }, constants: VariableDeclaration[], types: Array<TypeAliasDeclaration | InterfaceDeclaration>, references, options: MarkdownTemplateOptions) {
@@ -196,27 +206,27 @@ function generateSummary(namespaces: ModuleDeclaration[], classes: ClassDeclarat
 ${namespaces.length ? `
 **Namespaces**
 
-${namespaces.map((ns) => toLink(ns.name.getText(), ns, options)).join(', ')}` : ''}
+${namespaces.map((ns) => toLink(nameToString(ns.name), ns, options)).join(', ')}` : ''}
 
 ${classes.length ? `
 **Classes**
 
-${classes.map((clazz) => toLink(clazz.name.getText(), clazz, options)).join(', ')}` : ''}
+${classes.map((clazz) => toLink(nameToString(clazz.name), clazz, options)).join(', ')}` : ''}
 
 ${methodsList.length ? `
 **Methods**
 
-${methodsList.map((methodDeclarationList) => toLink(methodDeclarationList[0].name.getText(), methodDeclarationList[0], options)).join(', ')}` : ''}
+${methodsList.map((methodDeclarationList) => toLink(nameToString(methodDeclarationList[0].name), methodDeclarationList[0], options)).join(', ')}` : ''}
 
 ${constants.length ? `
 **Constants**
 
-${constants.map((constant) => toLink(constant.name.getText(), constant, options)).join(', ')}` : ''}
+${constants.map((constant) => toLink(nameToString(constant.name), constant, options)).join(', ')}` : ''}
 
 ${types.length ? `
 **Types**
 
-${types.map((type) => toLink(type.name.getText(), type, options)).join(', ')} ` : ''}
+${types.map((type) => toLink(nameToString(type.name), type, options)).join(', ')} ` : ''}
 
 `;
 }
@@ -277,7 +287,7 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
             if (!name) {
                 return true;
             }
-            return !globalRefs.some((ref) => ref.name.getText() === name.getText())
+            return !globalRefs.some((ref) => nameToString(ref.name) === nameToString(name))
         })
         .forEach((constant) => {
             let variableContent = generateConstant(constant, references, options);
@@ -306,7 +316,7 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
 
 function generateNamespace(ns: ModuleDeclaration, references, options) {
     let description = getJSDocDescription(ns);
-    return `### ${ns.name.getText()}
+    return `### ${nameToString(ns.name)}
 
 ${description || ''}
 
@@ -342,7 +352,7 @@ function generateClass(clazz: ClassDeclaration, references, options) {
         .filter((member) => isMethodDeclaration(member))
         .map((member) => member as MethodDeclaration)
         .forEach((member) => {
-            let name = member.name.getText();
+            let name = nameToString(member.name);
             if (member.modifiers && member.modifiers.some((mod) => mod.kind === SyntaxKind.StaticKeyword)) {
                 staticMethods[name] = staticMethods[name] || [];
                 staticMethods[name].push(member);
@@ -351,7 +361,7 @@ function generateClass(clazz: ClassDeclaration, references, options) {
                 instanceMethods[name].push(member);
             }
         });
-    return `### ${clazz.name.getText()}
+    return `### ${nameToString(clazz.name)}
 
 ${clazz.heritageClauses && clazz.heritageClauses.length ? `**Extends:** ${renderType(clazz.heritageClauses[0].types[0], references, options)}` : ''}
 
@@ -365,7 +375,7 @@ ${instanceProperties.length ? `**Properties**
 
 | Name | Type | Readonly | Description |
 | :--- | :--- | :------: | :---------- |
-${instanceProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getJSDocDescription(prop) || ''} |`).join('\n')}
+${instanceProperties.map((prop) => `| ${nameToString(prop.name)} | <code>${renderType(prop.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getJSDocDescription(prop) || ''} |`).join('\n')}
 ` : ''}
 
 ${Object.keys(instanceMethods).length ? `**Methods**
@@ -377,7 +387,7 @@ ${staticProperties.length ? `**Static properties**
 
 | Name | Type | Readonly | Description |
 | :--- | :--- | :------: | :---------- |
-${staticProperties.map((prop) => `| ${prop.name.getText()} | <code>${renderType(prop.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getJSDocDescription(prop) || ''} |`).join('\n')}
+${staticProperties.map((prop) => `| ${nameToString(prop.name)} | <code>${renderType(prop.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|') || ''}</code> | ${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''} | ${getJSDocDescription(prop) || ''} |`).join('\n')}
 ` : ''}
 
 ${Object.keys(staticMethods).length ? `**Static methods**
@@ -388,7 +398,7 @@ ${Object.values(staticMethods).map((methodList) => generateMethod(methodList, re
 }
 
 function generateMethod(methodDeclarationList: (FunctionDeclaration|MethodDeclaration)[], references, options: MarkdownTemplateOptions) {
-    let name = methodDeclarationList[0].name.getText();
+    let name = nameToString(methodDeclarationList[0].name);
     let description = getJSDocDescription(methodDeclarationList[0]);
     let samples = getJSDocExamples(methodDeclarationList[0]);
     return `### ${name}
@@ -397,7 +407,7 @@ ${description ? description.trim() : ''}
 
 ${methodDeclarationList.map((method) => `<details>
 <summary>
-<code>(${method.parameters.map((param) => `${param.name.getText()}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, true)}`).join(', ').replace(/</g, '&lt;')}): ${renderType(method.type, references, options, true).replace(/</g, '&lt;')}</code>
+<code>(${method.parameters.map((param) => `${nameToString(param.name)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options, true)}`).join(', ').replace(/</g, '&lt;')}): ${renderType(method.type, references, options, true).replace(/</g, '&lt;')}</code>
 </summary>
 
 ${method.parameters.length ? `**Params**
@@ -405,7 +415,7 @@ ${method.parameters.length ? `**Params**
 | Name | Type | Optional | Description |
 | ---- | ---- | :------: | ----------- |
 ${method.parameters
-        .map((param) => `| ${param.name.getText()} | <code>${renderType(param.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|').replace(/\n/g, ' ')}</code> | ${param.questionToken ? '✓' : ''} | ${getJSDocParamDescription(methodDeclarationList[0], param.name.getText()) || ''} |`)
+        .map((param) => `| ${nameToString(param.name)} | <code>${renderType(param.type, references, options).replace(/</g, '&lt;').replace(/\|/g, '\\|').replace(/\n/g, ' ')}</code> | ${param.questionToken ? '✓' : ''} | ${getJSDocParamDescription(methodDeclarationList[0], nameToString(param.name)) || ''} |`)
         .join('\n')}` : ''}
 
 **Returns**: <code>${renderType(method.type, references, options).replace(/\n/g, ' ')}</code> ${getJSDocReturnDescription(methodDeclarationList[0]) || ''}
@@ -421,7 +431,7 @@ ${samples.join('\n\n')}` : ''}
 function generateConstant(constant: VariableDeclaration, references, options) {
     let description = getJSDocDescription(constant) || getJSDocDescription(constant.parent.parent);
     let samples = getJSDocExamples(constant);
-    return `### ${constant.name.getText()}
+    return `### ${nameToString(constant.name)}
 
 ${description ? description.trim() : ''}
 
@@ -442,7 +452,7 @@ function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, reference
     } else {
         declarations = (type.typeParameters || createNodeArray()).map((type) => renderType(type, references, options)).join('|');
     }
-    return `### ${type.name.getText()}
+    return `### ${nameToString(type.name)}
 
 ${description ? description.trim() : ''}
 
@@ -454,13 +464,8 @@ ${samples.join('\n\n')}` : ''}
 `;
 }
 
-export = function markdown(sourceFiles: SourceFile[], options: MarkdownTemplateOptions) {
-    let indexContent = '';
-
-    sourceFiles.forEach((source) => {
-        indexContent += `${generateSource(source, {})}`
-    });
-
+export = function markdown(sourceFile: SourceFile, options: MarkdownTemplateOptions) {
+    const code = generateSource(sourceFile, {});
     ensureFile(options.out);
-    writeFileSync(options.out, indexContent);
+    writeFileSync(options.out, code);
 }

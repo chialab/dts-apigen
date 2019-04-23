@@ -1,10 +1,10 @@
-import { isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createVariableDeclaration, createVariableStatement, createModifier, createVariableDeclarationList, NodeFlags, createExportDeclaration, createNamedExports, createExportSpecifier, isSourceFile, createTypeLiteralNode, createPropertySignature, createTypeQueryNode, createSourceFile, ScriptTarget, ScriptKind, updateSourceFileNode, Statement } from 'typescript';
+import { isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createVariableDeclaration, createVariableStatement, createModifier, createVariableDeclarationList, NodeFlags, createExportDeclaration, createNamedExports, createExportSpecifier, isSourceFile, createTypeLiteralNode, createPropertySignature, createTypeQueryNode, createSourceFile, ScriptTarget, ScriptKind, Statement, createPrinter, createModuleDeclaration, createModuleBlock } from 'typescript';
 import { ReferencesMap, collect } from './collect';
 import { removeModifier, addModifier, hasModifier } from './helpers/ast';
 
-function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: string[], suggested?: string) {
+function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: Map<string, Symbol>, suggested?: string) {
     let baseName = suggested || (symbol.getDeclarations()[0] as any).name.escapedText;
-    while (collected.indexOf(baseName) !== -1) {
+    while (collected.has(baseName)) {
         let matchAlias = baseName.match(/_(\d+)$/);
         if (matchAlias) {
             baseName = baseName.replace(/_(\d+)$/, `_${parseInt(matchAlias[1]) + 1}`);
@@ -13,6 +13,7 @@ function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: stri
         }
     }
     if (baseName !== symbol.getName()) {
+        collected.set(baseName, symbol);
         (symbol as any)._escapedName = symbol.getName();
         (symbol.escapedName as string) = baseName;
         symbol.getDeclarations().forEach((declaration) => {
@@ -21,7 +22,6 @@ function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: stri
         let refs = references.get(symbol) || [];
         refs.forEach((ref) => {
             ref.escapedText = baseName;
-            ref.parent = null;
         });
     }
 }
@@ -35,23 +35,82 @@ function getOriginalSymbolName(symbol: Symbol) {
 
 export function bundle(fileName: string) {
     const { typechecker, symbols, references, exported } = collect(fileName);
-    const statements: Statement[] = [];
-    const collected: string[] = exported
-        .filter((symbol) => {
-            if (symbols.includes(symbol)) {
-                return false;
-            }
-            let alias = typechecker.getAliasedSymbol(symbol);
-            if (!alias) {
-                return false;
-            }
-            let aliasDeclaration = alias.getDeclarations()[0];
-            return isSourceFile(aliasDeclaration);
-        })
-        .map((symbol) => symbol.getName());
-    symbols.forEach((symbol) => {
+    const collected: Map<string, Symbol> = new Map();
+    const nodes: Array<[Node, Symbol]> = symbols.reduce((list:  Array<[Node, Symbol]>, symbol) => {
         const sourceFile = symbol.getDeclarations()[0].getSourceFile();
-        if (sourceFile.fileName.indexOf('node_modules') === -1) {
+        if (sourceFile.fileName.includes('node_modules')) {
+            return list;
+        }
+        symbol.getDeclarations()
+            .forEach((declaration) => {
+                let node: Node = declaration;
+                if (isVariableDeclaration(declaration)) {
+                    node = declaration.parent.parent;
+                }
+                removeModifier(node, SyntaxKind.DefaultKeyword);
+                removeModifier(node, SyntaxKind.ExportKeyword);
+                list.push([node, symbol]);
+            });
+        return list;
+    }, []);
+    exported.forEach((sym) => {
+        let refs = nodes.filter(([node, symbol]) => symbol === sym);
+        if (refs.length) {
+            refs.forEach(([node]) => {
+                addModifier(node, SyntaxKind.ExportKeyword, true);
+            });
+            collected.set(sym.getName(), sym);
+            return;
+        }
+        let declaration = sym.getDeclarations()[0];
+        if (!isExportSpecifier(declaration)) {
+            return;
+        }
+        let alias = typechecker.getAliasedSymbol(sym);
+        if (!alias) {
+            return;
+        }
+        let aliasDeclaration = alias.getDeclarations()[0];
+        if (isSourceFile(aliasDeclaration)) {
+            let aliasExportSymbols = typechecker.getExportsOfModule(alias);
+            let indexes = [];
+            let aliasExportNodes = aliasExportSymbols.reduce((list, exportSymbol) => {
+                list.push(...nodes
+                    .filter(([node, symbol], index) => {
+                        if (symbol === exportSymbol) {
+                            indexes.push(index);
+                            return true;
+                        }
+                        return false;
+                    })
+                    .map(([ node ]) => node)
+                );
+                return list;
+            }, []);
+            let node = createModuleDeclaration([], [createModifier(SyntaxKind.ExportKeyword), createModifier(SyntaxKind.DeclareKeyword)], createIdentifier(sym.getName()), createModuleBlock(
+                aliasExportNodes.map((node) => {
+                    removeModifier(node, SyntaxKind.DeclareKeyword);
+                    addModifier(node, SyntaxKind.ExportKeyword, true);
+                    return node;
+                })
+            ), NodeFlags.Namespace);
+            node.parent = aliasDeclaration;
+            indexes.sort().forEach((index, i) => {
+                nodes.splice(index - i, 1);
+            });
+            collected.set(sym.getName(), undefined);
+            nodes.push([node, undefined]);
+            return;
+        }
+        refs = nodes.filter(([node, symbol]) => symbol === alias);
+        refs.forEach(([node]) => {
+            addModifier(node, SyntaxKind.ExportKeyword, true);
+        });
+        renameSymbol(alias, references, collected, sym.getName());
+        collected.set(sym.getName(), alias);
+    });
+    const statements: Statement[] = nodes.map(([node, symbol]) => {
+        if (symbol) {
             let symbolName = symbol.getName();
             if (symbolName === 'default') {
                 let declaration = symbol.getDeclarations()[0];
@@ -60,62 +119,22 @@ export function bundle(fileName: string) {
                 } else {
                     renameSymbol(symbol, references, collected, '__default');
                 }
-            } else if (collected.indexOf(symbolName) !== -1) {
-                renameSymbol(symbol, references, collected);
-            } else {
-                collected.push(symbolName);
+            } else if (collected.get(symbolName) !== symbol) {
+                if (collected.has(symbolName)) {
+                    renameSymbol(symbol, references, collected);
+                } else {
+                    collected.set(symbolName, symbol);
+                }
             }
-            symbol.getDeclarations()
-                .map((declaration) => {
-                    let node: Node = declaration;
-                    if (isVariableDeclaration(declaration)) {
-                        node = declaration.parent.parent;
-                    }
-                    removeModifier(node, SyntaxKind.DefaultKeyword);
-                    removeModifier(node, SyntaxKind.ExportKeyword);
-                    if (!hasModifier(node, SyntaxKind.DeclareKeyword)) {
-                        addModifier(node, SyntaxKind.DeclareKeyword);
-                    }
-                    return node;
-                })
-                .forEach((node) => {
-                    statements.push(node as Statement);
-                });
         }
+        if (!hasModifier(node, SyntaxKind.DeclareKeyword)) {
+            addModifier(node, SyntaxKind.DeclareKeyword);
+        }
+        return node as Statement;
     });
-    exported.forEach((symbol) => {
-        const name = symbol.getName();
-        let node: Node;
-        let declaration = symbol.getDeclarations()[0];
-        if (symbols.includes(symbol)) {
-            let declarationName = (declaration as any).name.getText();
-            node = createExportDeclaration([], [], createNamedExports([
-                createExportSpecifier(name !== declarationName ? name : undefined, declarationName),
-            ]));
-        } else if (isExportSpecifier(declaration)) {
-            let alias = typechecker.getAliasedSymbol(symbol);
-            if (!alias) {
-                return;
-            }
-            let aliasDeclaration = alias.getDeclarations()[0];
-            if (isSourceFile(aliasDeclaration)) {
-                let aliasExports = typechecker.getExportsOfModule(alias);
-                node = createVariableStatement([createModifier(SyntaxKind.ExportKeyword), createModifier(SyntaxKind.DeclareKeyword)], createVariableDeclarationList([
-                    createVariableDeclaration(name, createTypeLiteralNode(
-                        aliasExports.map((aliasExport) => createPropertySignature([], getOriginalSymbolName(aliasExport), undefined, createTypeQueryNode((aliasExport.getDeclarations()[0] as any).name), undefined))
-                    ), undefined)
-                ], NodeFlags.Const));
-            } else {
-                let aliasName = (aliasDeclaration as any).name.escapedText;
-                node = createExportDeclaration([], [], createNamedExports([
-                    createExportSpecifier(name !== aliasName ? name : undefined, aliasName),
-                ]));
-            }
-        }
-        if (!node) {
-            return;
-        }
-        statements.push(node as Statement);
-    });
-    return updateSourceFileNode(createSourceFile('bundle.d.ts', '', ScriptTarget.Latest, false, ScriptKind.TS), statements, true);
+    const printer = createPrinter();
+    const code = statements
+        .map((node) => printer.printNode(4, node, node.getSourceFile()))
+        .join('\n');
+    return createSourceFile('bundle.d.ts', code, ScriptTarget.ESNext, true, ScriptKind.TS);
 }
