@@ -10,12 +10,12 @@
     "dts-apigen": "bin/dts-apigen"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf lib && tsc",
     "prepack": "rm -rf lib && tsc"
   },
   "dependencies": {
     "commander": "^2.19.0",
-    "typescript": "~3.1.6"
+    "typescript": "^3.0.0"
   },
   "devDependencies": {
     "@types/node": "^11.13.4"
