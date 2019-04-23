@@ -8,7 +8,7 @@ export function createCompilerHost(options: CompilerOptions, setParentNodes?: bo
     // create a new compiler host if not passed
     const host = oldHost || tsCreateCompilerHost(options, setParentNodes);
 
-    // override the getSourceFile
+    // override getSourceFile
     const originalGetSourceFile = host.getSourceFile;
     host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) => {
         let source = originalGetSourceFile.call(host, fileName, languageVersion, onError, shouldCreateNewSourceFile);

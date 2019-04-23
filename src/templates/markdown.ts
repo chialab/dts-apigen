@@ -277,7 +277,6 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
             if (!name) {
                 return true;
             }
-            console.log('>>>', name.getText())
             return !globalRefs.some((ref) => ref.name.getText() === name.getText())
         })
         .forEach((constant) => {

@@ -1,10 +1,10 @@
 import { writeFileSync } from 'fs';
-import { createPrinter, EmitHint, isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createVariableDeclaration, createVariableStatement, createModifier, createVariableDeclarationList, NodeFlags, createExportDeclaration, createNamedExports, createExportSpecifier, isSourceFile, createTypeLiteralNode, createPropertySignature, createTypeQueryNode, TypeChecker } from 'typescript';
+import { createPrinter, EmitHint, isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createVariableDeclaration, createVariableStatement, createModifier, createVariableDeclarationList, NodeFlags, createExportDeclaration, createNamedExports, createExportSpecifier, isSourceFile, createTypeLiteralNode, createPropertySignature, createTypeQueryNode, TypeChecker, createSourceFile, ScriptTarget, ScriptKind } from 'typescript';
 import { ReferencesMap, collect } from './collect';
 import { ensureFile } from './helpers/fs';
 import { removeModifier, addModifier, hasModifier } from './helpers/ast';
 
-function renameSymbol(typechecker: TypeChecker, symbol: Symbol, references: ReferencesMap, collected: string[], suggested?: string) {
+function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: string[], suggested?: string) {
     let baseName = suggested || (symbol.getDeclarations()[0] as any).name.escapedText;
     while (collected.indexOf(baseName) !== -1) {
         let matchAlias = baseName.match(/_(\d+)$/);
@@ -35,9 +35,10 @@ function getOriginalSymbolName(symbol: Symbol) {
     return symbol.getName();
 }
 
-export function bundle(fileNames: string[], output?: string) {
-    const { typechecker, symbols, references, exported } = collect(fileNames);
+export function bundle(fileName: string, output?: string) {
+    const { typechecker, symbols, references, exported } = collect(fileName);
     const printer = createPrinter();
+    const resultFile = createSourceFile(output, '', ScriptTarget.Latest, false, ScriptKind.TS);
     const blocks: string[] = [];
     const collected: string[] = exported
         .filter((symbol) => {
@@ -59,12 +60,12 @@ export function bundle(fileNames: string[], output?: string) {
             if (symbolName === 'default') {
                 let declaration = symbol.getDeclarations()[0];
                 if ((declaration as any).name) {
-                    renameSymbol(typechecker, symbol, references, collected, (declaration as any).name.getText());
+                    renameSymbol(symbol, references, collected, (declaration as any).name.getText());
                 } else {
-                    renameSymbol(typechecker, symbol, references, collected, '__default');
+                    renameSymbol(symbol, references, collected, '__default');
                 }
             } else if (collected.indexOf(symbolName) !== -1) {
-                renameSymbol(typechecker, symbol, references, collected);
+                renameSymbol(symbol, references, collected);
             } else {
                 collected.push(symbolName);
             }
@@ -85,13 +86,12 @@ export function bundle(fileNames: string[], output?: string) {
                     blocks.push(printer.printNode(
                         EmitHint.Unspecified,
                         node,
-                        sourceFile
+                        resultFile
                     ));
                 });
         }
     });
     exported.forEach((symbol) => {
-        const sourceFile = symbol.getDeclarations()[0].getSourceFile();
         const name = symbol.getName();
         let node: Node;
         let declaration = symbol.getDeclarations()[0];
@@ -126,7 +126,7 @@ export function bundle(fileNames: string[], output?: string) {
         blocks.push(printer.printNode(
             EmitHint.Unspecified,
             node,
-            sourceFile
+            resultFile
         ));
     });
     const code = blocks.join('\n\n');

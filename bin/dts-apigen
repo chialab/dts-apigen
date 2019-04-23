@@ -21,7 +21,10 @@ cli
     .description('Bundle all declaration files into a single .d.ts file')
     .option('-O, --out <file>', 'Output file for declaration file bundle.')
     .action((file, options) => {
-        bundle([file], options.out);
+        if (!options.out) {
+            throw new Error('missing `out` option');
+        }
+        bundle(file, options.out);
     });
 
 cli

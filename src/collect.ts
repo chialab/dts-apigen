@@ -1,11 +1,15 @@
-import { createProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode } from 'typescript';
+import { resolve, dirname } from 'path';
+import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, SyntaxKind, isExportAssignment } from 'typescript';
+import { createProgram } from './Program';
 
 export type ReferencesMap = Map<Symbol, Identifier[]>;
 
 function addReference(references: ReferencesMap, symbol: Symbol, type: Identifier) {
     let list = references.get(symbol) || [];
-    list.push(type);
-    references.set(symbol, list);
+    if (!list.includes(type)) {
+        list.push(type);
+        references.set(symbol, list);
+    }
 }
 
 function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], references: ReferencesMap, node: Node) {
@@ -147,7 +151,7 @@ function collectSymbol(typechecker: TypeChecker, symbols: Symbol[], references: 
         return;
     }
     const firstDeclaration = symbol.getDeclarations()[0];
-    if (isExportSpecifier(firstDeclaration)) {
+    if (isExportSpecifier(firstDeclaration) || isExportAssignment(firstDeclaration)) {
         collectSymbol(typechecker, symbols, references, typechecker.getAliasedSymbol(symbol));
     } else if (isSourceFile(firstDeclaration)) {
         let exported = typechecker.getExportsOfModule(symbol);
@@ -162,24 +166,64 @@ function collectSymbol(typechecker: TypeChecker, symbols: Symbol[], references: 
     }
 }
 
-export function collect(fileNames: string[]) {
-    const program = createProgram(fileNames, {
-        target: ScriptTarget.ESNext,
-        declaration: true,
-    });
-    const typechecker = program.getTypeChecker();
-    const sources = program.getSourceFiles();
-    const main = sources[sources.length - 1];
+function createCompilerHost(options: CompilerOptions) {
+    const host = tsCreateCompilerHost(options);
+    const map = {};
 
+    // override getSourceFile
+    const originalGetSourceFile = host.getSourceFile;
+    host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) => {
+        if (fileName in map) {
+            return createSourceFile(fileName, map[fileName], languageVersion, true, ScriptKind.TS);
+        }
+        return originalGetSourceFile.call(host, fileName, languageVersion, onError, shouldCreateNewSourceFile);
+    };
+
+    host.resolveModuleNames = (moduleNames: string[], containingFile: string) => {
+        const resolvedModules: ResolvedModule[] = [];
+        for (const moduleName of moduleNames) {
+            let virtualFile = `${resolve(dirname(containingFile), moduleName)}.d.ts`;
+            if (virtualFile in map) {
+                resolvedModules.push({
+                    resolvedFileName: virtualFile,
+                });
+                continue;
+            }
+            // try to use standard resolution
+            let result = resolveModuleName(moduleName, containingFile, options, sys);
+            if (result.resolvedModule) {
+                resolvedModules.push(result.resolvedModule);
+            }
+        }
+        return resolvedModules;
+    };
+
+    const collector = (fileName, data) => {
+        map[fileName] = data;
+    };
+
+    const getFileNames = () => {
+        return Object.keys(map);
+    };
+
+    return { host, collector, getFileNames };
+}
+
+export function collect(fileName: string) {
+    const compilerOptions: CompilerOptions = { target: ScriptTarget.ESNext, declaration: true };
+    const { host, collector, getFileNames } = createCompilerHost(compilerOptions);
+    createProgram([fileName], compilerOptions).emit(undefined, collector);
+    const program = tsCreateProgram(getFileNames(), compilerOptions, host);
+    const typechecker = program.getTypeChecker();
     const symbols: Symbol[] = [];
     const references: ReferencesMap = new Map();
-    const exported = typechecker.getExportsOfModule(typechecker.getSymbolAtLocation(main));
+    const symbol = typechecker.getSymbolAtLocation([...program.getSourceFiles()].pop());
+    const exported = typechecker.getExportsOfModule(symbol);
     exported.forEach((symbol) => collectSymbol(typechecker, symbols, references, symbol));
     return {
-        sources,
         symbols,
-        references,
         exported,
+        references,
         typechecker,
     };
 }

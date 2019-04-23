@@ -11,9 +11,6 @@ import { transformers } from './transformers/index';
  * @return A TypeScript program
  */
 export function createProgram(fileNames: ReadonlyArray<string>, options: CompilerOptions, host?: CompilerHost, oldProgram?: Program, configFileParsingDiagnostics?: ReadonlyArray<Diagnostic>): Program {
-    // create a temporary folder for fake transpiled files generation
-    const tempDeclarationDir = join(process.cwd(), '.apigen');
-
     // normalize files names
     fileNames = fileNames.map((fileName) => resolve(process.cwd(), fileName));
 
@@ -40,7 +37,6 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
         },
         config,
         {
-            outDir: tempDeclarationDir,
             declaration: true,
             emitDeclarationOnly: false,
             allowJs: true,
