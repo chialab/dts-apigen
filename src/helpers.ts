@@ -111,6 +111,18 @@ export function getReturnDescription(node: FunctionDeclaration|MethodDeclaration
 }
 
 /**
+ * Check if node has modifier
+ * @param node The node to update
+ * @param kind THe kind of the modifier to add
+ */
+export function hasModifier(node: Node, kind: number) {
+    if (!node.modifiers) {
+        return false;
+    }
+    return (node.modifiers as any).some((modifier) => modifier.kind === kind);
+}
+
+/**
  * Update modifiers for a node
  * @param node The node to update
  * @param kind THe kind of the modifier to add
