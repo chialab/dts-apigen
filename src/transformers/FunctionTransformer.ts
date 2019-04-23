@@ -14,7 +14,9 @@ function handleParam(node: FunctionExpression, param: ParameterDeclaration) {
             param.type = jsDocParam.typeExpression.type;
         }
     }
-    if (!originalParam.questionToken && jsDocParam.isBracketed) {
+    if (originalParam.dotDotDotToken) {
+        delete param.questionToken;
+    } else if (!originalParam.questionToken && jsDocParam.isBracketed) {
         param.questionToken = createToken(SyntaxKind.QuestionToken);
     }
     return param;
