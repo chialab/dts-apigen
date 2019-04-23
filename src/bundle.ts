@@ -35,10 +35,10 @@ function getOriginalSymbolName(symbol: Symbol) {
 }
 
 export function bundle(fileNames: string[], output?: string) {
-    const { typechecker, symbols, references, exports } = collect(fileNames);
+    const { typechecker, symbols, references, exported } = collect(fileNames);
     const printer = createPrinter();
     const blocks: string[] = [];
-    const collected: string[] = exports
+    const collected: string[] = exported
         .filter((symbol) => {
             if (symbols.includes(symbol)) {
                 return false;
@@ -89,7 +89,7 @@ export function bundle(fileNames: string[], output?: string) {
                 });
         }
     });
-    exports.forEach((symbol) => {
+    exported.forEach((symbol) => {
         const sourceFile = symbol.getDeclarations()[0].getSourceFile();
         const name = symbol.getName();
         let node: Node;

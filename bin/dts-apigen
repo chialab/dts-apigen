@@ -2,7 +2,7 @@
 
 const cli = require('commander');
 const json = require('../package.json');
-const { createProgram, bundle, templates } = require('../lib/index.js');
+const { generate, bundle, templates } = require('../lib/index.js');
 
 cli.version(json.version);
 
@@ -11,10 +11,9 @@ cli
     .description('Generate declaration files')
     .option('-O, --out <dir>', 'Output directory for generated declaration files.')
     .action((file, options) => {
-        let program = createProgram([file], {
+        generate([file], {
             declarationDir: options.out,
-        });
-        program.emit();
+        })
     });
 
 cli

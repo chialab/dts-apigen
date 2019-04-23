@@ -1,4 +1,4 @@
-import { createProgram, Symbol, TypeChecker, isFunctionDeclaration, SyntaxKind, isExportSpecifier, Signature, Type, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, TypeNode, isLiteralTypeNode, NodeFlags, TypeFlags, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isThisTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode } from 'typescript';
+import { createProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode } from 'typescript';
 
 export type ReferencesMap = Map<Symbol, Identifier[]>;
 
@@ -7,23 +7,6 @@ function addReference(references: ReferencesMap, symbol: Symbol, type: Identifie
     list.push(type);
     references.set(symbol, list);
 }
-
-// function collectTypeReferences(typechecker: TypeChecker, symbols: Symbol[], references: ReferencesMap, type: Type) {
-//     if (type.isUnionOrIntersection()) {
-//         type.types.forEach((childType) => collectTypeReferences(typechecker, symbols, references, childType));
-//     } else {
-//         let symbol = (type as any).aliasSymbol || (type as any).symbol;
-//         if (!symbol) {
-//             return;
-//         }
-//         if (symbol.getName() === 'Url') {
-//             // console.log(type);
-//             // console.log(type.getBaseTypes())
-//         }
-//         addReference(references, symbol, type);
-//         collectSymbol(typechecker, symbols, references, symbol);
-//     }
-// }
 
 function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], references: ReferencesMap, node: Node) {
     if (isFunctionDeclaration(node) ||
@@ -190,13 +173,13 @@ export function collect(fileNames: string[]) {
 
     const symbols: Symbol[] = [];
     const references: ReferencesMap = new Map();
-    const exports = typechecker.getExportsOfModule(typechecker.getSymbolAtLocation(main));
-    exports.forEach((symbol) => collectSymbol(typechecker, symbols, references, symbol));
+    const exported = typechecker.getExportsOfModule(typechecker.getSymbolAtLocation(main));
+    exported.forEach((symbol) => collectSymbol(typechecker, symbols, references, symbol));
     return {
         sources,
         symbols,
         references,
-        exports,
+        exported,
         typechecker,
     };
 }
