@@ -31,7 +31,7 @@ export function visitor(node: Node): Node {
                 } else {
                     type = typeExpression.type || createTypeReferenceNode('Object', []);
                 }
-                let typeDeclaration = createTypeAliasDeclaration([], [createModifier(SyntaxKind.DeclareKeyword)], typedef.name.escapedText as string, [], type);
+                let typeDeclaration = createTypeAliasDeclaration([], [createModifier(SyntaxKind.ExportKeyword), createModifier(SyntaxKind.DeclareKeyword)], typedef.name.escapedText as string, [], type);
                 typedefStatements.push(typeDeclaration);
             });
             return updateSourceFileNode(node as SourceFile, [...typedefStatements, ...(node as SourceFile).statements], (node as SourceFile).isDeclarationFile);

@@ -1,4 +1,4 @@
-import { SyntaxKind, Node, FunctionExpression, ParameterDeclaration, getJSDocReturnType, getJSDocParameterTags, createToken, VariableDeclaration, createFunctionTypeNode, createTypeReferenceNode, createIdentifier, createKeywordTypeNode } from 'typescript';
+import { SyntaxKind, Node, FunctionExpression, ParameterDeclaration, getJSDocReturnType, getJSDocParameterTags, createToken, VariableDeclaration, createFunctionTypeNode, createTypeReferenceNode, createIdentifier, createKeywordTypeNode, isFunctionTypeNode } from 'typescript';
 import { getOriginalNode, getJSDocTagByName } from '../helpers/ast';
 import { createTransformer } from '../helpers/transformer';
 
@@ -66,22 +66,25 @@ export function visitor(node: Node): Node {
             break;
         }
         case SyntaxKind.VariableDeclaration: {
-            if (!(node as VariableDeclaration).type) {
-                if (!(node as VariableDeclaration).initializer) {
+            let type = (node as VariableDeclaration).type;
+            if (!isFunctionTypeNode(type)) {
+                return node;
+            }
+            let originalNode = getOriginalNode(node) as VariableDeclaration;
+            if (!originalNode.initializer) {
+                break;
+            }
+            let fn = visitor(originalNode.initializer);
+            switch (fn.kind) {
+                case SyntaxKind.ArrowFunction:
+                case SyntaxKind.FunctionExpression:
+                case SyntaxKind.FunctionDeclaration: {
+                    (node as VariableDeclaration).type = createFunctionTypeNode(
+                        undefined,
+                        (fn as FunctionExpression).parameters,
+                        (fn as FunctionExpression).type
+                    );
                     break;
-                }
-                let fn = visitor((node as VariableDeclaration).initializer);
-                switch (fn.kind) {
-                    case SyntaxKind.ArrowFunction:
-                    case SyntaxKind.FunctionExpression:
-                    case SyntaxKind.FunctionDeclaration: {
-                        (node as VariableDeclaration).type = createFunctionTypeNode(
-                            undefined,
-                            (fn as FunctionExpression).parameters,
-                            (fn as FunctionExpression).type
-                        );
-                        break;
-                    }
                 }
             }
             break;
