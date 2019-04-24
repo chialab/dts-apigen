@@ -15,19 +15,11 @@ function nameToString(node): string {
     return node.escapedText || node.getText();
 }
 
-function cleanupCode(code: string): string {
-    return code.replace(/</g, '&lt;');
-}
-
 function toLink(label: string, node: Node, options: MarkdownTemplateOptions): string {
     if (options.mode === 'files') {
-        return `[${label}](${toFile(node)})`;
+        return `<a href="${toFile(node)}">${label}</a>`;
     }
-    return `[${label}](#${nameToString((node as any).name)})`
-}
-
-function normalizeLinks(code) {
-    return code.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
+    return `<a href="#${nameToString((node as any).name)}">${label}</a>`;
 }
 
 function collectReferences(statements: NodeArray<Statement>) {
@@ -83,7 +75,7 @@ function renderType(type: TypeNode|TypeElement|TypeParameterDeclaration, referen
     if (isTypeReferenceNode(type)) {
         let name = nameToString(type.typeName);
         let linked = references.find((item) => nameToString(item.name) === name);
-        return `${linked ? toLink(name, linked, options) : name}${type.typeArguments ? `<${type.typeArguments.map((arg) => renderType(arg, references, options)).join(', ')}>` : ''}`;
+        return `${linked ? toLink(name, linked, options) : name}${type.typeArguments ? `&lt;${type.typeArguments.map((arg) => renderType(arg, references, options)).join(', ')}&gt;` : ''}`;
     }
     if (isUnionTypeNode(type)) {
         return type.types.map((type) => renderType(type, references, options)).join('|');
@@ -181,7 +173,6 @@ ${type.members.map((member) => `${renderType(member, references, options).replac
         return `${nameToString(type['parameterName'])} is ${linked ? toLink(name, linked, options) : name}`;
     }
     console.log('unhandled type kind:', type.kind, SyntaxKind[type.kind]);
-    return '';
 }
 
 function toFile(node: Node): string {
@@ -204,7 +195,7 @@ function generateSummary(namespaces: ModuleDeclaration[], classes: ClassDeclarat
     types = types.filter((type) => isExported(type));
     let methodsList = Object.values(methods).filter((methodList) => isExported(methodList[0]));
 
-    return normalizeLinks(`
+    return `
 ${namespaces.length ? `
 <strong>Namespaces</strong>
 
@@ -230,7 +221,7 @@ ${types.length ? `
 
 ${types.map((type) => toLink(nameToString(type.name), type, options)).join(', ')} ` : ''}
 
-`);
+`;
 }
 
 function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
@@ -318,11 +309,11 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
 
 function generateNamespace(ns: ModuleDeclaration, references, options) {
     let description = getJSDocDescription(ns);
-    return normalizeLinks(`<h3>${nameToString(ns.name)}</h3>
+    return `<h3>${nameToString(ns.name)}</h3>
 
 <p>${description ? description.trim() : ''}</p>
 
-${generateModule((ns.body as any).statements, references || [], options)}`);
+${generateModule((ns.body as any).statements, references || [], options)}`;
 }
 
 function generateSource(source: SourceFile, options) {
@@ -363,7 +354,7 @@ function generateClass(clazz: ClassDeclaration, references, options) {
                 instanceMethods[name].push(member);
             }
         });
-    return normalizeLinks(`<h3>${nameToString(clazz.name)}</h3>
+    return `<h3>${nameToString(clazz.name)}</h3>
 
 ${clazz.heritageClauses && clazz.heritageClauses.length ? `<strong>Extends:</strong> ${renderType(clazz.heritageClauses[0].types[0], references, options)}` : ''}
 
@@ -371,7 +362,7 @@ ${clazz.heritageClauses && clazz.heritageClauses.length ? `<strong>Extends:</str
 
 ${samples.length ? `<strong>Examples</strong>
 
-${samples.join('\n\n')}` : ''}
+${samples.join('\n\n').replace(/</g, '&lt;')}` : ''}
 
 ${instanceProperties.length ? `<strong>Properties</strong>
 
@@ -385,7 +376,7 @@ ${instanceProperties.length ? `<strong>Properties</strong>
     <tbody>
         <tr>${instanceProperties.map((prop) => `
             <td>${nameToString(prop.name)}</td>
-            <td><code>${cleanupCode(renderType(prop.type, references, options)).replace(/\|/g, '\\|') || ''}</code></td>
+            <td><code>${renderType(prop.type, references, options)}</code></td>
             <td align="center">${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''}</td>
             <td>${getJSDocDescription(prop) || ''}</td>`).join('</tr>\n<tr>')}
         </tr>
@@ -410,7 +401,7 @@ ${staticProperties.length ? `<strong>Static properties</strong>
     <tbody>
         <tr>${staticProperties.map((prop) => `
             <td>${nameToString(prop.name)}</td>
-            <td><code>${cleanupCode(renderType(prop.type, references, options)).replace(/\|/g, '\\|') || ''}</code></td>
+            <td><code>${renderType(prop.type, references, options)}</code></td>
             <td align="center">${prop.modifiers && prop.modifiers.some((mod) => mod.kind === SyntaxKind.ReadonlyKeyword) ? '✓' : ''}</td>
             <td>${getJSDocDescription(prop) || ''}</td>`).join('</tr>\n<tr>')}
         </tr>
@@ -422,20 +413,20 @@ ${Object.keys(staticMethods).length ? `<strong>Static methods</strong>
 
 ${Object.values(staticMethods).map((methodList) => generateMethod(methodList, references, options)).join('\n\n')}
 `: ''}
-`);
+`;
 }
 
 function generateMethod(methodDeclarationList: (FunctionDeclaration|MethodDeclaration)[], references, options: MarkdownTemplateOptions) {
     let name = nameToString(methodDeclarationList[0].name);
     let description = getJSDocDescription(methodDeclarationList[0]);
     let samples = getJSDocExamples(methodDeclarationList[0]);
-    return normalizeLinks(`<h3>${name}</h3>
+    return `<h3>${name}</h3>
 
 <p>${description ? description.trim() : ''}</p>
 
 ${methodDeclarationList.map((method) => `<details>
 <summary>
-<code>(${cleanupCode(method.parameters.map((param) => `${nameToString(param.name)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)})`).join(', '))}): ${cleanupCode(renderType(method.type, references, options))}</code>
+<code>(${method.parameters.map((param) => `${nameToString(param.name)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)})`).join(', ')}): ${renderType(method.type, references, options)}</code>
 </summary>
 
 ${method.parameters.length ? `<strong>Params</strong>
@@ -450,7 +441,7 @@ ${method.parameters.length ? `<strong>Params</strong>
     <tbody>
         <tr>${method.parameters.map((param) => `
             <td>${nameToString(param.name)}</td>
-            <td><code>${cleanupCode(renderType(param.type, references, options)).replace(/\|/g, '\\|').replace(/\n/g, ' ')}</code></td>
+            <td><code>${renderType(param.type, references, options)}</code></td>
             <td align="center">${param.questionToken ? '✓' : ''}</td>
             <td>${getJSDocParamDescription(methodDeclarationList[0], nameToString(param.name)) || ''}</td>`)
                 .join('</tr>\n<tr>')}` : ''}
@@ -465,13 +456,13 @@ ${method.parameters.length ? `<strong>Params</strong>
 ${samples.length ? `<strong>Examples</strong>
 
 ${samples.join('\n\n')}` : ''}
-`);
+`;
 }
 
 function generateConstant(constant: VariableDeclaration, references, options) {
     let description = getJSDocDescription(constant) || getJSDocDescription(constant.parent.parent);
     let samples = getJSDocExamples(constant);
-    return normalizeLinks(`<h3>${nameToString(constant.name)}</h3>
+    return `<h3>${nameToString(constant.name)}</h3>
 
 <p>${description ? description.trim() : ''}</p>
 
@@ -479,8 +470,10 @@ ${samples.length ? `<strong>Examples</strong>
 
 ${samples.join('\n\n')}` : ''}
 
-${constant.type ? `<strong>Type:</strong>\n\n<pre>${cleanupCode(renderType(constant.type, references, options))}</pre>` : ''}
-`);
+${constant.type ? `<strong>Type:</strong>
+
+<pre>${renderType(constant.type, references, options)}</pre>` : ''}
+`;
 }
 
 function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, references, options) {
@@ -492,7 +485,7 @@ function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, reference
     } else {
         declarations = (type.typeParameters || createNodeArray()).map((type) => renderType(type, references, options)).join('|');
     }
-    return normalizeLinks(`<h3>${nameToString(type.name)}</h3>
+    return `<h3>${nameToString(type.name)}</h3>
 
 <p>${description ? description.trim() : ''}</p>
 
@@ -500,8 +493,8 @@ ${samples.length ? `<strong>Examples</strong>
 
 ${samples.join('\n\n')}` : ''}
 
-<pre>${cleanupCode(declarations).replace(/ /g, '&nbsp;')}</pre>
-`);
+<pre>${declarations}</pre>
+`;
 }
 
 export = function markdown(sourceFile: SourceFile, options: MarkdownTemplateOptions) {
