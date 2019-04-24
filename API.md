@@ -8,7 +8,7 @@
 
 
 
-<thead><th>Methods</th></thead>
+<thead><th align="left">Methods</th></thead>
 
 <tbody>
     <tr>
@@ -19,7 +19,7 @@
 </tbody>
 
 
-<thead><th>Constants</th></thead>
+<thead><th align="left">Constants</th></thead>
 
 <tbody>
     <tr>
@@ -38,23 +38,23 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" align="top" /> createCompilerHost</strong></summary>
+<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> createCompilerHost</strong></summary><br />
 
 <p>Create a custom CompilerHost that treats JS files as regular TS files in order to generate declarations.</p>
 
 <details>
 <summary>
 <code>(options: CompilerOptions), setParentNodes?: boolean), oldHost?: CompilerHost)): CompilerHost</code>
-</summary>
+</summary><br />
 
 <strong>Params</strong>
 
 <table>
     <thead>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Optional</th>
-        <th>Description</th>
+        <th align="left">Name</th>
+        <th align="left">Type</th>
+        <th align="center">Optional</th>
+        <th align="left">Description</th>
     </thead>
     <tbody>
         <tr>
@@ -87,23 +87,23 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" align="top" /> createProgram</strong></summary>
+<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> createProgram</strong></summary><br />
 
 <p>Create a TypeScript program with custom transformers and custom resolution for JS files</p>
 
 <details>
 <summary>
 <code>(fileNames: ReadonlyArray&lt;string&gt;), options: CompilerOptions), host?: CompilerHost), oldProgram?: Program), configFileParsingDiagnostics?: ReadonlyArray&lt;Diagnostic&gt;)): Program</code>
-</summary>
+</summary><br />
 
 <strong>Params</strong>
 
 <table>
     <thead>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Optional</th>
-        <th>Description</th>
+        <th align="left">Name</th>
+        <th align="left">Type</th>
+        <th align="center">Optional</th>
+        <th align="left">Description</th>
     </thead>
     <tbody>
         <tr>
@@ -146,23 +146,23 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" align="top" /> generate</strong></summary>
+<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> generate</strong></summary><br />
 
 <p></p>
 
 <details>
 <summary>
 <code>(fileNames: string[]), options: CompilerOptions)): EmitResult</code>
-</summary>
+</summary><br />
 
 <strong>Params</strong>
 
 <table>
     <thead>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Optional</th>
-        <th>Description</th>
+        <th align="left">Name</th>
+        <th align="left">Type</th>
+        <th align="center">Optional</th>
+        <th align="left">Description</th>
     </thead>
     <tbody>
         <tr>
@@ -190,7 +190,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" align="top" /> collect</strong></summary>
+<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> collect</strong></summary><br />
 
 <p></p>
 
@@ -202,16 +202,16 @@
     references: Map&lt;Symbol, Identifier[]&gt;;
     typechecker: TypeChecker;
 }</code>
-</summary>
+</summary><br />
 
 <strong>Params</strong>
 
 <table>
     <thead>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Optional</th>
-        <th>Description</th>
+        <th align="left">Name</th>
+        <th align="left">Type</th>
+        <th align="center">Optional</th>
+        <th align="left">Description</th>
     </thead>
     <tbody>
         <tr>
@@ -234,23 +234,23 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" align="top" /> bundle</strong></summary>
+<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> bundle</strong></summary><br />
 
 <p></p>
 
 <details>
 <summary>
 <code>(fileName: string)): SourceFile</code>
-</summary>
+</summary><br />
 
 <strong>Params</strong>
 
 <table>
     <thead>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Optional</th>
-        <th>Description</th>
+        <th align="left">Name</th>
+        <th align="left">Type</th>
+        <th align="center">Optional</th>
+        <th align="left">Description</th>
     </thead>
     <tbody>
         <tr>
@@ -273,7 +273,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/constant-1FBF44.svg?style=flat-square" alt="namespace badge" align="top" /> transformers</strong></summary>
+<summary><strong><img src="https://img.shields.io/badge/constant-1FBF44.svg?style=flat-square" alt="namespace badge" height="14" /> transformers</strong></summary><br />
 
 <p>The full list of JSDoc transformers.</p>
 
@@ -288,7 +288,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/constant-1FBF44.svg?style=flat-square" alt="namespace badge" align="top" /> templates</strong></summary>
+<summary><strong><img src="https://img.shields.io/badge/constant-1FBF44.svg?style=flat-square" alt="namespace badge" height="14" /> templates</strong></summary><br />
 
 <p>A list of template factories for documentation generation.</p>
 
@@ -305,7 +305,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/type-BF1FAC.svg?style=flat-square" alt="namespace badge" align="top" /> TemplateOptions</strong></summary>
+<summary><strong><img src="https://img.shields.io/badge/type-BF1FAC.svg?style=flat-square" alt="namespace badge" height="14" /> TemplateOptions</strong></summary><br />
 
 <p>The options to pass to the template generator.
 `out` property is always required.</p>
@@ -322,7 +322,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/type-BF1FAC.svg?style=flat-square" alt="namespace badge" align="top" /> TemplateFactory</strong></summary>
+<summary><strong><img src="https://img.shields.io/badge/type-BF1FAC.svg?style=flat-square" alt="namespace badge" height="14" /> TemplateFactory</strong></summary><br />
 
 <p>A function that generate documentation using source files, package json data and template options.</p>
 
