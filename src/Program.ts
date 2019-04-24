@@ -46,11 +46,6 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
         }
     );
 
-    /**
-     * A map of generated declaration files.
-     */
-    const filesMap: { [key: string]: string } = {};
-
     // generate the custom compiler host to correctly load JS files.
     const compilerHost = createCompilerHost(compilerOptions, true, host);
     // create the TypeScript program
@@ -64,16 +59,8 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
         customTransformers.afterDeclarations = customTransformers.afterDeclarations || [];
         customTransformers.afterDeclarations.push(...transformers);
 
-        const collectWriteFile = (fileName: string, data: string, writeByteOrderMark: boolean, onError?: (message: string) => void, sourceFiles?: ReadonlyArray<SourceFile>) => {
-            filesMap[resolve(compilerOptions.rootDir, fileName)] = data;
-            if (writeFile) {
-                return writeFile(fileName, data, writeByteOrderMark, onError, sourceFiles);
-            }
-            return compilerHost.writeFile(fileName, data, writeByteOrderMark, onError, sourceFiles);
-        };
-
         // call the original emit method and print diagnostic
-        const result = originalEmit.call(program, targetSourceFile, collectWriteFile, cancellationToken, true, customTransformers);
+        const result = originalEmit.call(program, targetSourceFile, writeFile, cancellationToken, true, customTransformers);
         const allDiagnostics = getPreEmitDiagnostics(program).concat(result.diagnostics);
         if (result.emitSkipped) {
             allDiagnostics.forEach((diagnostic) => {

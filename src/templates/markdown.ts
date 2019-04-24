@@ -68,6 +68,7 @@ function collectReferences(statements: NodeArray<Statement>) {
         } else if (isImportDeclaration(node) || isExportDeclaration(node) || isNamespaceExportDeclaration(node) || isExportAssignment(node) || isImportEqualsDeclaration(node)) {
             // ignore
         } else {
+            console.log(node)
             console.log('unhandled node type:', node.kind, SyntaxKind[node.kind], `in ${node.getSourceFile().fileName}`);
         }
     });

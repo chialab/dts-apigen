@@ -155,8 +155,148 @@ export function isExported(node: Node): boolean {
  * @param root The root object to traverse
  * @param callback The callback to trigger for each child.
  */
-export function traverse(root: Node, callback: (node: Node) => boolean|void): void {
+export function traverse(root: Node, callback: (node: Node) => boolean | void): void {
+    const visited = [];
     const visit = (node) => {
+        if (!node) {
+            return;
+        }
+        if (visited.includes(node)) {
+            return;
+        }
+        visited.push(node);
+        if (node.left) {
+            visitNode(node.left, visitAndRun);
+        }
+        if (node.tag) {
+            visitNode(node.tag, visitAndRun);
+        }
+        if (node.operand) {
+            visitNode(node.operand, visitAndRun);
+        }
+        if (node.condition) {
+            visitNode(node.condition, visitAndRun);
+        }
+        if (node.head) {
+            visitNode(node.head, visitAndRun);
+        }
+        if (node.type) {
+            visitNode(node.type, visitAndRun);
+        }
+        if (node.elementType) {
+            visitNode(node.elementType, visitAndRun);
+        }
+        if (node.objectType) {
+            visitNode(node.objectType, visitAndRun);
+        }
+        if (node.checkType) {
+            visitNode(node.checkType, visitAndRun);
+        }
+        if (node.typeParameter) {
+            visitNode(node.typeParameter, visitAndRun);
+        }
+        if (node.expression) {
+            visitNode(node.expression, visitAndRun);
+        }
+        if (node.argument) {
+            visitNode(node.argument, visitAndRun);
+        }
+        if (node.name) {
+            visitNode(node.name, visitAndRun);
+        }
+        if (node.typeName) {
+            visitNode(node.typeName, visitAndRun);
+        }
+        if (node.parameterName) {
+            visitNode(node.parameterName, visitAndRun);
+        }
+        if (node.propertyName) {
+            visitNode(node.propertyName, visitAndRun);
+        }
+        if (node.tagName) {
+            visitNode(node.tagName, visitAndRun);
+        }
+        if (node.exprName) {
+            visitNode(node.exprName, visitAndRun);
+        }
+        if (node.readonlyToken) {
+            visitNode(node.readonlyToken, visitAndRun);
+        }
+        if (node.dotDotDotToken) {
+            visitNode(node.dotDotDotToken, visitAndRun);
+        }
+        if (node.asteriskToken) {
+            visitNode(node.asteriskToken, visitAndRun);
+        }
+        if (node.initializer) {
+            visitNode(node.initializer, visitAndRun);
+        }
+        if (node.body) {
+            visitNode(node.body, visitAndRun);
+        }
+        if (node.tryBlock) {
+            visitNode(node.tryBlock, visitAndRun);
+        }
+        if (node.openingFragment) {
+            visitNode(node.openingFragment, visitAndRun);
+        }
+        if (node.variableDeclaration) {
+            visitNode(node.variableDeclaration, visitAndRun);
+        }
+        if (node.awaitModifier) {
+            visitNode(node.awaitModifier, visitAndRun);
+        }
+        if (node.label) {
+            visitNode(node.label, visitAndRun);
+        }
+        if (node.literal) {
+            visitNode(node.literal, visitAndRun);
+        }
+        if (node.types) {
+            visitNodes(node.types, visitAndRun);
+        }
+        if (node.typeArguments) {
+            visitNodes(node.typeArguments, visitAndRun);
+        }
+        if (node.typeParameters) {
+            visitNodes(node.typeParameters, visitAndRun);
+        }
+        if (node.elementTypes) {
+            visitNodes(node.elementTypes, visitAndRun);
+        }
+        if (node.declarationList) {
+            visitNode(node.declarationList, visitAndRun);
+        }
+        if (node.decorators) {
+            visitNodes(node.decorators, visitAndRun);
+        }
+        if (node.modifiers) {
+            visitNodes(node.modifiers, visitAndRun);
+        }
+        if (node.parameters) {
+            visitNodes(node.parameters, visitAndRun);
+        }
+        if (node.declarations) {
+            visitNodes(node.declarations, visitAndRun);
+        }
+        if (node.statements) {
+            visitNodes(node.statements, visitAndRun);
+        }
+        if (node.elements) {
+            visitNodes(node.elements, visitAndRun);
+        }
+        if (node.properties) {
+            visitNodes(node.properties, visitAndRun);
+        }
+        if (node.members) {
+            visitNodes(node.members, visitAndRun);
+        }
+        if (node.clauses) {
+            visitNodes(node.clauses, visitAndRun);
+        }
+        return node;
+    };
+    const visitAndRun = (node) => {
         if (!node) {
             return;
         }
@@ -164,136 +304,8 @@ export function traverse(root: Node, callback: (node: Node) => boolean|void): vo
             // stop
             return;
         }
-        if (node.left) {
-            visitNode(node.left, visit);
-        }
-        if (node.tag) {
-            visitNode(node.tag, visit);
-        }
-        if (node.operand) {
-            visitNode(node.operand, visit);
-        }
-        if (node.condition) {
-            visitNode(node.condition, visit);
-        }
-        if (node.head) {
-            visitNode(node.head, visit);
-        }
-        if (node.type) {
-            visitNode(node.type, visit);
-        }
-        if (node.elementType) {
-            visitNode(node.elementType, visit);
-        }
-        if (node.objectType) {
-            visitNode(node.objectType, visit);
-        }
-        if (node.checkType) {
-            visitNode(node.checkType, visit);
-        }
-        if (node.typeParameter) {
-            visitNode(node.typeParameter, visit);
-        }
-        if (node.expression) {
-            visitNode(node.expression, visit);
-        }
-        if (node.argument) {
-            visitNode(node.argument, visit);
-        }
-        if (node.name) {
-            visitNode(node.name, visit);
-        }
-        if (node.typeName) {
-            visitNode(node.typeName, visit);
-        }
-        if (node.parameterName) {
-            visitNode(node.parameterName, visit);
-        }
-        if (node.propertyName) {
-            visitNode(node.propertyName, visit);
-        }
-        if (node.tagName) {
-            visitNode(node.tagName, visit);
-        }
-        if (node.exprName) {
-            visitNode(node.exprName, visit);
-        }
-        if (node.readonlyToken) {
-            visitNode(node.readonlyToken, visit);
-        }
-        if (node.dotDotDotToken) {
-            visitNode(node.dotDotDotToken, visit);
-        }
-        if (node.asteriskToken) {
-            visitNode(node.asteriskToken, visit);
-        }
-        if (node.initializer) {
-            visitNode(node.initializer, visit);
-        }
-        if (node.body) {
-            visitNode(node.body, visit);
-        }
-        if (node.tryBlock) {
-            visitNode(node.tryBlock, visit);
-        }
-        if (node.openingFragment) {
-            visitNode(node.openingFragment, visit);
-        }
-        if (node.variableDeclaration) {
-            visitNode(node.variableDeclaration, visit);
-        }
-        if (node.awaitModifier) {
-            visitNode(node.awaitModifier, visit);
-        }
-        if (node.label) {
-            visitNode(node.label, visit);
-        }
-        if (node.literal) {
-            visitNode(node.literal, visit);
-        }
-        if (node.types) {
-            visitNodes(node.types, visit);
-        }
-        if (node.typeArguments) {
-            visitNodes(node.typeArguments, visit);
-        }
-        if (node.typeParameters) {
-            visitNodes(node.typeParameters, visit);
-        }
-        if (node.elementTypes) {
-            visitNodes(node.elementTypes, visit);
-        }
-        if (node.declarationList) {
-            visitNode(node.declarationList, visit);
-        }
-        if (node.decorators) {
-            visitNodes(node.decorators, visit);
-        }
-        if (node.modifiers) {
-            visitNodes(node.modifiers, visit);
-        }
-        if (node.parameters) {
-            visitNodes(node.parameters, visit);
-        }
-        if (node.declarations) {
-            visitNodes(node.declarations, visit);
-        }
-        if (node.statements) {
-            visitNodes(node.statements, visit);
-        }
-        if (node.elements) {
-            visitNodes(node.elements, visit);
-        }
-        if (node.properties) {
-            visitNodes(node.properties, visit);
-        }
-        if (node.members) {
-            visitNodes(node.members, visit);
-        }
-        if (node.clauses) {
-            visitNodes(node.clauses, visit);
-        }
+        visit(node);
         return node;
-    };
-    visitNode(root, visit);
+    }
+    visit(root);
 }

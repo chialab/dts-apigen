@@ -1,10 +1,10 @@
 import { resolve, dirname } from 'path';
-import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode } from 'typescript';
+import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode, ModuleResolutionKind, createModuleResolutionCache, ResolvedProjectReference, SyntaxKind, isThisTypeNode, isImportSpecifier, isTypePredicateNode, isLiteralTypeNode, isQualifiedName } from 'typescript';
 import { createProgram } from './Program';
 
 export type ReferencesMap = Map<Symbol, Identifier[]>;
 
-function addReference(references: ReferencesMap, symbol: Symbol, type: Identifier) {
+export function addReference(references: ReferencesMap, symbol: Symbol, type: Identifier) {
     let list = references.get(symbol) || [];
     if (!list.includes(type)) {
         list.push(type);
@@ -88,12 +88,26 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
                 collectNodeReferences(typechecker, symbols, references, member);
             });
         }
-    } else if (isExpressionWithTypeArguments(node) || isTypeParameterDeclaration(node)) {
+    } else if (isExpressionWithTypeArguments(node)) {
         if (node.expression) {
             collectNodeReferences(typechecker, symbols, references, node.expression);
         }
+    } else if (isTypeParameterDeclaration(node)) {
+        if (node.expression) {
+            collectNodeReferences(typechecker, symbols, references, node.expression);
+        }
+        if (node.constraint) {
+            collectNodeReferences(typechecker, symbols, references, node.constraint);
+        }
     } else if (isUnionTypeNode(node) || isIntersectionTypeNode(node)) {
         node.types.forEach((type) => collectNodeReferences(typechecker, symbols, references, type));
+    } else if (isTypePredicateNode(node)) {
+        if (node.parameterName) {
+            collectNodeReferences(typechecker, symbols, references, node.parameterName);
+        }
+        if (node.type) {
+            collectNodeReferences(typechecker, symbols, references, node.type);
+        }
     } else if (isParenthesizedTypeNode(node) || isTypeOperatorNode(node)) {
         if (node.type) {
             collectNodeReferences(typechecker, symbols, references, node.type);
@@ -131,6 +145,13 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
         if (node.objectType) {
             collectNodeReferences(typechecker, symbols, references, node.objectType);
         }
+    } else if (isQualifiedName(node)) {
+        if (node.left) {
+            collectNodeReferences(typechecker, symbols, references, node.left);
+        }
+        if (node.right) {
+            collectNodeReferences(typechecker, symbols, references, node.right);
+        }
     } else if (isIdentifier(node)) {
         let symbol = typechecker.getSymbolAtLocation(node);
         if (symbol) {
@@ -142,17 +163,29 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
         if (symbol) {
             collectSymbol(typechecker, symbols, references, symbol);
         }
+    } else if (isThisTypeNode(node) ||
+        isImportSpecifier(node) ||
+        isLiteralTypeNode(node) ||
+        [
+            SyntaxKind.UnknownKeyword,
+            SyntaxKind.VoidKeyword,
+            SyntaxKind.UndefinedKeyword,
+            SyntaxKind.NullKeyword,
+            SyntaxKind.BooleanKeyword,
+            SyntaxKind.NumberKeyword,
+            SyntaxKind.ObjectKeyword,
+            SyntaxKind.StringKeyword,
+            SyntaxKind.SymbolKeyword,
+            SyntaxKind.AnyKeyword,
+        ].includes(node.kind)) {
+        // ignore
     } else {
-        let symbol = typechecker.getSymbolAtLocation(node);
-        if (symbol) {
-            collectSymbol(typechecker, symbols, references, symbol);
-        }
-        // console.log(SyntaxKind[node.kind], node);
+        console.log('unhandled type', SyntaxKind[node.kind], node, node.getSourceFile().fileName);
     }
 }
 
 function collectSymbol(typechecker: TypeChecker, symbols: Symbol[], references: ReferencesMap, symbol: Symbol) {
-    if (symbols.indexOf(symbol) !== -1) {
+    if (symbols.includes(symbol)) {
         // already collected
         return;
     }
@@ -163,10 +196,15 @@ function collectSymbol(typechecker: TypeChecker, symbols: Symbol[], references: 
     if (isExportSpecifier(firstDeclaration) || isExportAssignment(firstDeclaration)) {
         collectSymbol(typechecker, symbols, references, typechecker.getAliasedSymbol(symbol));
     } else if (isSourceFile(firstDeclaration)) {
+        if (firstDeclaration.fileName.includes('node_modules')) {
+            return;
+        }
         let exported = typechecker.getExportsOfModule(symbol);
         exported.forEach((exportedSymbol) => {
             collectSymbol(typechecker, symbols, references, exportedSymbol);
         });
+    } else if (isTypeParameterDeclaration(firstDeclaration)) {
+        // ignore
     } else if (isFunctionTypeNode(firstDeclaration) || isConstructorTypeNode(firstDeclaration)) {
         symbol.declarations.forEach((declaration) => collectNodeReferences(typechecker, symbols, references, declaration));
     } else {
@@ -188,7 +226,9 @@ function createCompilerHost(options: CompilerOptions) {
         return originalGetSourceFile.call(host, fileName, languageVersion, onError, shouldCreateNewSourceFile);
     };
 
-    host.resolveModuleNames = (moduleNames: string[], containingFile: string) => {
+    let cache;
+    host.resolveModuleNames = (moduleNames: string[], containingFile: string, reusedNames: string[], redirectedReference: ResolvedProjectReference) => {
+        cache = cache || createModuleResolutionCache(host.getCurrentDirectory(), (x) => host.getCanonicalFileName(x));
         const resolvedModules: ResolvedModule[] = [];
         for (const moduleName of moduleNames) {
             let virtualFile = `${resolve(dirname(containingFile), moduleName)}.d.ts`;
@@ -196,12 +236,9 @@ function createCompilerHost(options: CompilerOptions) {
                 resolvedModules.push({
                     resolvedFileName: virtualFile,
                 });
-                continue;
-            }
-            // try to use standard resolution
-            let result = resolveModuleName(moduleName, containingFile, options, sys);
-            if (result.resolvedModule) {
-                resolvedModules.push(result.resolvedModule);
+            } else {
+                // try to use standard resolution
+                resolvedModules.push(resolveModuleName(moduleName, containingFile, options, host, cache, redirectedReference).resolvedModule);
             }
         }
         return resolvedModules;
@@ -219,14 +256,19 @@ function createCompilerHost(options: CompilerOptions) {
 }
 
 export function collect(fileName: string) {
-    const compilerOptions: CompilerOptions = { target: ScriptTarget.ESNext, declaration: true };
+    const compilerOptions: CompilerOptions = {
+        target: ScriptTarget.ESNext,
+        moduleResolution: ModuleResolutionKind.NodeJs,
+        declaration: true,
+    };
     const { host, collector, getFileNames } = createCompilerHost(compilerOptions);
     createProgram([fileName], compilerOptions).emit(undefined, collector);
-    const program = tsCreateProgram(getFileNames(), compilerOptions, host);
+    const files = getFileNames();
+    const program = tsCreateProgram(files, compilerOptions, host);
     const typechecker = program.getTypeChecker();
     const symbols: Symbol[] = [];
     const references: ReferencesMap = new Map();
-    const symbol = typechecker.getSymbolAtLocation([...program.getSourceFiles()].pop());
+    const symbol = typechecker.getSymbolAtLocation(program.getSourceFile(files[files.length - 1]));
     const exported = typechecker.getExportsOfModule(symbol);
     exported.forEach((symbol) => collectSymbol(typechecker, symbols, references, symbol));
     return {
