@@ -23,13 +23,7 @@ A `.d.ts` and documentation generator for TypeScript and JavaScript projects.
 
 TypeScript is a powerful tool, but at the moment of writing, [it prevents declaration files](https://github.com/Microsoft/TypeScript/issues/7546) generation for JavaScript files.
 
-This tool aims to offer a set of utils to generate `.d.ts` files starting from JS modules using JSDoc ([checkout](#supported-tags) the supported tags list) to fill typings informations. It also provides a method to generate a single bundled declaration file using the [`@microsoft/api-extractor`](https://api-extractor.com/) package, useful for JS libraries and Api documentation.
-
-## Known issues
-
-* Import as namespace is not currently implemented in `api-extractor` (see [#1029](https://github.com/Microsoft/web-build-tools/issues/1029))
-* Namespace references are not correclt bundled (see [#946](https://github.com/Microsoft/web-build-tools/issues/946))
-* The TypeScript version is ~3.1.6 because of the `api-extractor` dependency
+This tool aims to offer a set of utils to generate `.d.ts` files starting from JS modules using JSDoc ([checkout](#supported-tags) the supported tags list) to fill typings informations. It also provides a method to generate a single bundled declaration, useful for JS libraries and Api documentation.
 
 ## Usage
 
@@ -48,12 +42,12 @@ $ dts-apigen --help
 Usage: dts-apigen [options] [command]
 
 Options:
-  -V, --version                   output the version number
-  -h, --help                      output usage information
+  -V, --version                 output the version number
+  -h, --help                    output usage information
 
 Commands:
-  generate [options] <file>       Generate declaration files
-  bundle [options] <file>         Bundle all declaration files into a single .d.ts file
+  generate [options] <file>     Generate declaration files
+  bundle [options] <file>       Bundle all declaration files into a single .d.ts file
   documentate [options] <file>  Generate an API documentation markdown file
 ```
 
@@ -83,23 +77,20 @@ $ yarn add dts-apigen -D
 DTS ApiGen extends the TypeScript `createProgram` method and accepts all its options, as well as other custom transformers.
 
 ```js
-const { createProgram, createBundlerProgram } = require('dts-apigen');
+const { generate, bundle } = require('dts-apigen');
+const { writeFileSync } = require('fs');
+const { createPrinter } = require('typescript');
 
-const generatorProgram = createProgram(['src/index.js'], {
+const result = generate(['src/index.js'], {
     declarationDir: 'types',
 });
 
-// generate .d.ts files and print generated DTS asts:
-let result = generatorProgram.emit(undefined, undefined, undefined, true, {
-    afterDeclarations: [...],
-});
-console.log(result.dts);
+console.log(result.diagnostic);
 
 // generate the bundle file
-const bundlerProgram = createBundlerProgram(['src/index.js'], {
-    outputFile: 'typings.d.ts',
-});
-bundlerProgram.emit();
+const sourceFile = bundle('src/index.js');
+const code = createPrinter().printFile(resultFile);
+writeFileSync('bundle.d.ts', code);
 ```
 
 You can find the API documentation (generated with `dts-apigen`, of course) in the [API.md](./API.md) file.
