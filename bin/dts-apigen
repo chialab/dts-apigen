@@ -41,6 +41,8 @@ cli
     .option('-O, --out <dir>', 'Output dir for markdown files.')
     .option('-T, --template <module>', 'The template function to render documentation.')
     .option('--mode [mode]', 'The mode to use for markdown documentation. Accepted values are `module` and `files`')
+    .option('--header [content]', 'A custom header for markdown documentation')
+    .option('--footer [content]', 'A custom footer for markdown documentation')
     .action((file, options) => {
         if (!options.out) {
             throw new Error('missing `out` option');

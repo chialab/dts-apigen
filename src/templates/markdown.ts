@@ -6,7 +6,9 @@ import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescriptio
 import { TemplateOptions } from './index';
 
 type MarkdownTemplateOptions = TemplateOptions & {
-    mode: 'module'|'files';
+    mode: 'module' | 'files';
+    header?: string;
+    footer?: string;
 }
 
 type FunctionDeclarations = { [key: string]: FunctionDeclaration[] };
@@ -547,7 +549,7 @@ ${samples.join('\n\n')}` : ''}
 }
 
 export = function markdown(sourceFile: SourceFile, options: MarkdownTemplateOptions) {
-    const code = generateSource(sourceFile, {});
+    const code = `${options.header ? `${options.header}\n\n` : ''}${generateSource(sourceFile, {})}${options.footer ? `\n\n${options.footer}` : ''}`;
     ensureFile(options.out);
     writeFileSync(options.out, code);
 }
