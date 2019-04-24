@@ -11,6 +11,15 @@ type MarkdownTemplateOptions = TemplateOptions & {
 
 type FunctionDeclarations = { [key: string]: FunctionDeclaration[] };
 
+const BADGES = {
+    'module': '<img src="https://img.shields.io/badge/module-E21B50.svg?style=flat-square" alt="module badge" align="top" />',
+    'namespace': '<img src="https://img.shields.io/badge/namespace-0090E0.svg?style=flat-square" alt="namespace badge" align="top" />',
+    'method': '<img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" align="top" />',
+    'class': '<img src="https://img.shields.io/badge/class-3232C6.svg?style=flat-square" alt="namespace badge" align="top" />',
+    'constant': '<img src="https://img.shields.io/badge/constant-1FBF44.svg?style=flat-square" alt="namespace badge" align="top" />',
+    'type': '<img src="https://img.shields.io/badge/type-BF1FAC.svg?style=flat-square" alt="namespace badge" align="top" />',
+};
+
 function nameToString(node): string {
     return node.escapedText || node.getText();
 }
@@ -196,35 +205,75 @@ function generateSummary(namespaces: ModuleDeclaration[], classes: ClassDeclarat
     let methodsList = Object.values(methods).filter((methodList) => isExported(methodList[0]));
 
     return `
-${namespaces.length ? `
-<strong>Namespaces</strong>
+<table width="100%">
 
-${namespaces.map((ns) => toLink(nameToString(ns.name), ns, options)).join(', ')}` : ''}
+${namespaces.length ? `
+<thead><th>Namespaces</th></thead>
+
+<tbody>
+    <tr>
+        <td>
+${namespaces.map((ns) => toLink(nameToString(ns.name), ns, options)).join(', ')}
+        </td>
+    </tr>
+</tbody>` : ''}
 
 ${classes.length ? `
-<strong>Classes</strong>
+<thead><th>Classes</th></thead>
 
-${classes.map((clazz) => toLink(nameToString(clazz.name), clazz, options)).join(', ')}` : ''}
+<tbody>
+    <tr>
+        <td>
+${classes.map((clazz) => toLink(nameToString(clazz.name), clazz, options)).join(', ')}
+        </td>
+    </tr>
+</tbody>` : ''}
 
 ${methodsList.length ? `
-<strong>Methods</strong>
+<thead><th>Methods</th></thead>
 
-${methodsList.map((methodDeclarationList) => toLink(nameToString(methodDeclarationList[0].name), methodDeclarationList[0], options)).join(', ')}` : ''}
+<tbody>
+    <tr>
+        <td>
+${methodsList.map((methodDeclarationList) => toLink(nameToString(methodDeclarationList[0].name), methodDeclarationList[0], options)).join(', ')}
+        </td>
+    </tr>
+</tbody>` : ''}
 
 ${constants.length ? `
-<strong>Constants</strong>
+<thead><th>Constants</th></thead>
 
-${constants.map((constant) => toLink(nameToString(constant.name), constant, options)).join(', ')}` : ''}
+<tbody>
+    <tr>
+        <td>
+            ${constants.map((constant) => toLink(nameToString(constant.name), constant, options)).join(', ')}
+        </td>
+    </tr>
+</tbody>` : ''}
 
 ${types.length ? `
-<strong>Types</strong>
+<thead><th>Types</th></thead>
 
-${types.map((type) => toLink(nameToString(type.name), type, options)).join(', ')} ` : ''}
+<tbody>
+    <tr>
+        <td>
+${types.map((type) => toLink(nameToString(type.name), type, options)).join(', ')}
+        </td>
+    </tr>
+</tbody>` : ''}
+
+</table>
 
 `;
 }
 
-function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
+function collapseContent(content: string): string {
+    return `<details>
+${content.replace('<h3>', '<summary><strong>').replace('</h3>', '</strong></summary>')}
+</details>`;
+}
+
+function generateModule(statements: NodeArray<Statement>, globalRefs, options, collapse) {
     let members = collectReferences(statements);
     let references = [...globalRefs, ...members.references];
 
@@ -245,7 +294,7 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
             ensureFile(outFile);
             writeFileSync(outFile, nsContent);
         } else {
-            content += `\n\n<hr />\n\n${nsContent}`;
+            content += `\n\n<hr />\n\n${collapse ? collapseContent(nsContent) : nsContent}`;
         }
     });
 
@@ -256,7 +305,7 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
             ensureFile(outFile);
             writeFileSync(outFile, clazzContent);
         } else {
-            content += `\n\n<hr />\n\n${clazzContent}`;
+            content += `\n\n<hr />\n\n${collapse ? collapseContent(clazzContent) : clazzContent}`;
         }
     });
 
@@ -267,7 +316,7 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
             ensureFile(outFile);
             writeFileSync(outFile, methodContent);
         } else {
-            content += `\n\n<hr />\n\n${methodContent}`;
+            content += `\n\n<hr />\n\n${collapse ? collapseContent(methodContent) : methodContent}`;
         }
     });
 
@@ -289,7 +338,7 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
                 ensureFile(outFile);
                 writeFileSync(outFile, variableContent);
             } else {
-                content += `\n\n<hr />\n\n${variableContent}`;
+                content += `\n\n<hr />\n\n${collapse ? collapseContent(variableContent) : variableContent}`;
             }
         });
 
@@ -300,7 +349,7 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
             ensureFile(outFile);
             writeFileSync(outFile, typeContent);
         } else {
-            content += `\n\n<hr />\n\n${typeContent}`;
+            content += `\n\n<hr />\n\n${collapse ? collapseContent(typeContent) : typeContent}`;
         }
     });
 
@@ -309,15 +358,15 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options) {
 
 function generateNamespace(ns: ModuleDeclaration, references, options) {
     let description = getJSDocDescription(ns);
-    return `<h3>${nameToString(ns.name)}</h3>
+    return `<h3>${BADGES.namespace} ${nameToString(ns.name)}</h3>
 
 <p>${description ? description.trim() : ''}</p>
 
-${generateModule((ns.body as any).statements, references || [], options)}`;
+${generateModule((ns.body as any).statements, references || [], options, false)}`;
 }
 
 function generateSource(source: SourceFile, options) {
-    return generateModule(source.statements, [], options);
+    return generateModule(source.statements, [], options, true);
 }
 
 function generateClass(clazz: ClassDeclaration, references, options) {
@@ -354,7 +403,7 @@ function generateClass(clazz: ClassDeclaration, references, options) {
                 instanceMethods[name].push(member);
             }
         });
-    return `<h3>${nameToString(clazz.name)}</h3>
+    return `<h3>${BADGES.class} ${nameToString(clazz.name)}</h3>
 
 ${clazz.heritageClauses && clazz.heritageClauses.length ? `<strong>Extends:</strong> ${renderType(clazz.heritageClauses[0].types[0], references, options)}` : ''}
 
@@ -420,7 +469,7 @@ function generateMethod(methodDeclarationList: (FunctionDeclaration|MethodDeclar
     let name = nameToString(methodDeclarationList[0].name);
     let description = getJSDocDescription(methodDeclarationList[0]);
     let samples = getJSDocExamples(methodDeclarationList[0]);
-    return `<h3>${name}</h3>
+    return `<h3>${BADGES.method} ${name}</h3>
 
 <p>${description ? description.trim() : ''}</p>
 
@@ -462,7 +511,7 @@ ${samples.join('\n\n')}` : ''}
 function generateConstant(constant: VariableDeclaration, references, options) {
     let description = getJSDocDescription(constant) || getJSDocDescription(constant.parent.parent);
     let samples = getJSDocExamples(constant);
-    return `<h3>${nameToString(constant.name)}</h3>
+    return `<h3>${BADGES.constant} ${nameToString(constant.name)}</h3>
 
 <p>${description ? description.trim() : ''}</p>
 
@@ -485,7 +534,7 @@ function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, reference
     } else {
         declarations = (type.typeParameters || createNodeArray()).map((type) => renderType(type, references, options)).join('|');
     }
-    return `<h3>${nameToString(type.name)}</h3>
+    return `<h3>${BADGES.type} ${nameToString(type.name)}</h3>
 
 <p>${description ? description.trim() : ''}</p>
 
