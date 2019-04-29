@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, isSourceFile, isIdentifier, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode, JSDocTag } from 'typescript';
+import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode, JSDocTag, isEnumDeclaration, EnumDeclaration, createPrinter, EmitHint } from 'typescript';
 import { ensureFile } from '../helpers/fs';
 import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, getJSDocSeeLinks, isExported, JSDocSeeTag } from '../helpers/ast';
 import { TemplateOptions } from './index';
@@ -19,6 +19,7 @@ const BADGES = {
     'method': '<code>method</code> ',
     'class': '<code>class</code> ',
     'constant': '<code>constant</code> ',
+    'enum': '<code>enum</code> ',
     'type': '<code>type</code> ',
 };
 
@@ -53,6 +54,8 @@ function nameToFile(node: Node): string {
         return `method.${nameToId(node)}.md`;
     } else if (isVariableDeclaration(node)) {
         return `constant.${nameToId(node)}.md`;
+    } else if (isEnumDeclaration(node)) {
+        return `enum.${nameToId(node)}.md`;
     } else if (isInterfaceDeclaration(node) || isTypeAliasDeclaration(node)) {
         return `type.${nameToId(node)}.md`;
     } else if (isClassDeclaration(node)) {
@@ -74,6 +77,7 @@ function collectReferences(statements: NodeArray<Statement>) {
     const classes: ClassDeclaration[] = [];
     const methods: FunctionDeclarations = {};
     const constants: VariableDeclaration[] = [];
+    const enums: EnumDeclaration[] = [];
     const types: Array<TypeAliasDeclaration|InterfaceDeclaration> = [];
     const references: Node[] = [];
 
@@ -92,6 +96,9 @@ function collectReferences(statements: NodeArray<Statement>) {
             methods[name] = methods[name] || [];
             methods[name].push(node);
             references.push(node);
+        } else if (isEnumDeclaration(node)) {
+            enums.push(node);
+            references.push(node);
         } else if (isVariableStatement(node)) {
             constants.push(...node.declarationList.declarations);
             references.push(...node.declarationList.declarations);
@@ -104,7 +111,6 @@ function collectReferences(statements: NodeArray<Statement>) {
         } else if (isImportDeclaration(node) || isExportDeclaration(node) || isNamespaceExportDeclaration(node) || isExportAssignment(node) || isImportEqualsDeclaration(node)) {
             // ignore
         } else {
-            console.log(node)
             console.log('unhandled node type:', node.kind, SyntaxKind[node.kind], `in ${node.getSourceFile().fileName}`);
         }
     });
@@ -114,6 +120,7 @@ function collectReferences(statements: NodeArray<Statement>) {
         classes,
         methods,
         constants,
+        enums,
         types,
         references,
     }
@@ -257,7 +264,7 @@ ${type.members.map((member) => `${renderType(member, references, options).replac
     console.log('unhandled type kind:', type.kind, SyntaxKind[type.kind]);
 }
 
-function generateSummary(namespaces: ModuleDeclaration[], classes: ClassDeclaration[], methods: { [key: string]: FunctionDeclaration[] }, constants: VariableDeclaration[], types: Array<TypeAliasDeclaration | InterfaceDeclaration>, references, options: MarkdownTemplateOptions) {
+function generateSummary(namespaces: ModuleDeclaration[], classes: ClassDeclaration[], methods: { [key: string]: FunctionDeclaration[] }, constants: VariableDeclaration[], enums: EnumDeclaration[], types: Array<TypeAliasDeclaration | InterfaceDeclaration>, references, options: MarkdownTemplateOptions) {
     classes = classes.filter((clazz) => isExported(clazz));
     constants = constants.filter((constant) => isExported(constant.parent.parent));
     types = types.filter((type) => isExported(type));
@@ -284,6 +291,11 @@ ${constants.length ? `
 
 ${constants.map((constant) => toLink(constant, options)).join(', ')}` : ''}
 
+${enums.length ? `
+**Enums**
+
+${enums.map((enumDecl) => toLink(enumDecl, options)).join(', ')}` : ''}
+
 ${types.length ? `
 **Types**
 
@@ -300,6 +312,7 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options, c
         members.classes,
         members.methods,
         members.constants,
+        members.enums,
         members.types,
         references,
         options,
@@ -353,6 +366,18 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options, c
             let variableContent = generateConstant(constant, references, options);
             if (options.mode === 'files') {
                 let outFile = join(dirname(options.out), nameToFile(constant));
+                ensureFile(outFile);
+                writeFileSync(outFile, variableContent);
+            } else {
+                content += `\n\n<hr />\n\n${collapse ? collapseContent(variableContent) : variableContent}`;
+            }
+        });
+    
+    members.enums
+        .forEach((enumDecl) => {
+            let variableContent = generateEnum(enumDecl, references, options);
+            if (options.mode === 'files') {
+                let outFile = join(dirname(options.out), nameToFile(enumDecl));
                 ensureFile(outFile);
                 writeFileSync(outFile, variableContent);
             } else {
@@ -567,6 +592,46 @@ ${renderSamples(samples)}` : ''}
 ${constant.type ? `<strong>Type:</strong>
 
 <pre>${renderType(constant.type, references, options)}</pre>` : ''}
+
+${seeAlso.length ? `<strong>See also</strong>
+
+${renderSeeAlso(seeAlso, references, options)}` : ''}
+`;
+}
+
+function generateEnum(enumDecl: EnumDeclaration, references, options) {
+    let description = getJSDocDescription(enumDecl);
+    let samples = getJSDocExamples(enumDecl);
+    let seeAlso = getJSDocSeeLinks(enumDecl);
+    return `<h3 id="${nameToId(enumDecl)}">${BADGES.enum} ${nameToString(enumDecl)}</h3>
+
+<p>
+
+${description ? description.trim() : ''}
+
+</p>
+
+${enumDecl.members.length ? `
+<table>
+    <thead>
+        <th align="left">Member</th>
+        <th align="left">Description</th>
+        <th align="left">Value</th>
+    </thead>
+    <tbody>
+        <tr>${enumDecl.members.map((member) => `
+            <td>${nameToString(member)}</td>
+            <td>${getJSDocDescription(member) || ''}</td>
+            <td>${member.initializer ? `<code>${createPrinter().printNode(EmitHint.Unspecified, member.initializer, member.getSourceFile())}</code>` : '–'}</td>`)
+                .join('</tr>\n<tr>')}
+        </tr>
+    </tbody>
+</table>
+` : ''}
+
+${samples.length ? `<strong>Examples</strong>
+
+${renderSamples(samples)}` : ''}
 
 ${seeAlso.length ? `<strong>See also</strong>
 

@@ -4,6 +4,7 @@ import { transformer as TypedefTransformer } from './TypedefTransformer';
 import { transformer as NamespaceTransformer } from './NamespaceTransformer';
 import { transformer as AccessTransformer } from './AccessTransformer';
 import { transformer as FunctionTransformer } from './FunctionTransformer';
+import { transformer as EnumTransformer } from './EnumTransformer';
 import { transformer as VariableTransformer } from './VariableTransformer';
 
 /**
@@ -15,5 +16,6 @@ export const transformers: TransformerFactory<SourceFile>[] = [
     NamespaceTransformer,
     AccessTransformer,
     FunctionTransformer,
+    EnumTransformer,
     VariableTransformer,
 ];

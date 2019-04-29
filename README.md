@@ -101,6 +101,7 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @access
 * @async
 * @const
+* @enum
 * @namespace
 * @param
 * @private
@@ -119,7 +120,6 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @constructs
 * @default (synonyms: @defaultvalue)
 * @deprecated
-* @enum
 * @exports
 * @external (synonyms: @host)
 * @function (synonyms: @func, @method)
