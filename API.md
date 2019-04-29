@@ -1,44 +1,27 @@
 # DTS Apigen
 
 
-<table width="100%">
 
 
 
 
 
+**Methods**
 
-<thead><th align="left">Methods</th></thead>
-
-<tbody>
-    <tr>
-        <td>
-<a href="#createCompilerHost">createCompilerHost</a>, <a href="#createProgram">createProgram</a>, <a href="#generate">generate</a>, <a href="#collect">collect</a>, <a href="#bundle">bundle</a>
-        </td>
-    </tr>
-</tbody>
+<a href="#createcompilerhost">createCompilerHost</a>, <a href="#createprogram">createProgram</a>, <a href="#generate">generate</a>, <a href="#collect">collect</a>, <a href="#bundle">bundle</a>
 
 
-<thead><th align="left">Constants</th></thead>
+**Constants**
 
-<tbody>
-    <tr>
-        <td>
-            <a href="#transformers">transformers</a>, <a href="#templates">templates</a>
-        </td>
-    </tr>
-</tbody>
+<a href="#transformers">transformers</a>, <a href="#templates">templates</a>
 
-
-
-</table>
 
 
 
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> createCompilerHost</strong></summary><br />
+<summary><strong id="createcompilerhost"><small>method</small>  createCompilerHost</strong></summary><br />
 
 <p>Create a custom CompilerHost that treats JS files as regular TS files in order to generate declarations.</p>
 
@@ -87,7 +70,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> createProgram</strong></summary><br />
+<summary><strong id="createprogram"><small>method</small>  createProgram</strong></summary><br />
 
 <p>Create a TypeScript program with custom transformers and custom resolution for JS files</p>
 
@@ -146,7 +129,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> generate</strong></summary><br />
+<summary><strong id="generate"><small>method</small>  generate</strong></summary><br />
 
 <p></p>
 
@@ -190,7 +173,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> collect</strong></summary><br />
+<summary><strong id="collect"><small>method</small>  collect</strong></summary><br />
 
 <p></p>
 
@@ -234,7 +217,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/method-FF7900.svg?style=flat-square" alt="namespace badge" height="14" /> bundle</strong></summary><br />
+<summary><strong id="bundle"><small>method</small>  bundle</strong></summary><br />
 
 <p></p>
 
@@ -273,7 +256,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/constant-1FBF44.svg?style=flat-square" alt="namespace badge" height="14" /> transformers</strong></summary><br />
+<summary><strong id="transformers"><small>constant</small>  transformers</strong></summary><br />
 
 <p>The full list of JSDoc transformers.</p>
 
@@ -288,7 +271,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/constant-1FBF44.svg?style=flat-square" alt="namespace badge" height="14" /> templates</strong></summary><br />
+<summary><strong id="templates"><small>constant</small>  templates</strong></summary><br />
 
 <p>A list of template factories for documentation generation.</p>
 
@@ -297,7 +280,7 @@
 <strong>Type:</strong>
 
 <pre>{
-    [key: string]: <a href="#TemplateFactory">TemplateFactory</a>&lt;<a href="#TemplateOptions">TemplateOptions</a>&gt;;
+    [key: string]: <a href="#templatefactory">TemplateFactory</a>&lt;<a href="#templateoptions">TemplateOptions</a>&gt;;
 }</pre>
 
 </details>
@@ -305,7 +288,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/type-BF1FAC.svg?style=flat-square" alt="namespace badge" height="14" /> TemplateOptions</strong></summary><br />
+<summary><strong id="templateoptions"><small>type</small>  TemplateOptions</strong></summary><br />
 
 <p>The options to pass to the template generator.
 `out` property is always required.</p>
@@ -322,7 +305,7 @@
 <hr />
 
 <details>
-<summary><strong><img src="https://img.shields.io/badge/type-BF1FAC.svg?style=flat-square" alt="namespace badge" height="14" /> TemplateFactory</strong></summary><br />
+<summary><strong id="templatefactory"><small>type</small>  TemplateFactory</strong></summary><br />
 
 <p>A function that generate documentation using source files, package json data and template options.</p>
 
