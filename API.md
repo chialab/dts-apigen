@@ -23,7 +23,11 @@
 <details>
 <summary><strong id="createcompilerhost"><code>method</code>  createCompilerHost</strong></summary><br />
 
-<p>Create a custom CompilerHost that treats JS files as regular TS files in order to generate declarations.</p>
+<p>
+
+Create a custom CompilerHost that treats JS files as regular TS files in order to generate declarations.
+
+</p>
 
 <details>
 <summary>
@@ -65,6 +69,8 @@
 
 
 
+
+
 </details>
 
 <hr />
@@ -72,7 +78,11 @@
 <details>
 <summary><strong id="createprogram"><code>method</code>  createProgram</strong></summary><br />
 
-<p>Create a TypeScript program with custom transformers and custom resolution for JS files</p>
+<p>
+
+Create a TypeScript program with custom transformers and custom resolution for JS files
+
+</p>
 
 <details>
 <summary>
@@ -124,6 +134,8 @@
 
 
 
+
+
 </details>
 
 <hr />
@@ -131,7 +143,11 @@
 <details>
 <summary><strong id="generate"><code>method</code>  generate</strong></summary><br />
 
-<p></p>
+<p>
+
+Generate .d.ts files for TypeScript and/or JavaScript files.
+
+</p>
 
 <details>
 <summary>
@@ -152,19 +168,30 @@
             <td>fileNames</td>
             <td><code>string[]</code></td>
             <td align="center"></td>
-            <td></td></tr>
+            <td>A list of code files.</td></tr>
 <tr>
             <td>options</td>
             <td><code>CompilerOptions</code></td>
             <td align="center"></td>
-            <td></td>
+            <td>The TypeScript compiler options to use.</td>
         </tr>
     </tbody>
 </table>
 
-<strong>Returns</strong>: <code>EmitResult</code> 
+<strong>Returns</strong>: <code>EmitResult</code> The result of a TypeScript program emit.
 
 </details>
+
+<strong>Examples</strong>
+
+```ts
+ import { generate } from 'dts-apigen';
+
+ const result = generate(['src/index.ts'], { declarationDir: 'types' });
+ if (result.emitSkipped) {
+     throw new Error('ops!');
+ }
+ ```
 
 
 
@@ -175,7 +202,11 @@
 <details>
 <summary><strong id="collect"><code>method</code>  collect</strong></summary><br />
 
-<p></p>
+<p>
+
+Collect typechecker symbols for a module.
+
+</p>
 
 <details>
 <summary>
@@ -201,14 +232,25 @@
             <td>fileName</td>
             <td><code>string</code></td>
             <td align="center"></td>
-            <td></td>
+            <td>The module entry file.</td>
         </tr>
     </tbody>
 </table>
 
-<strong>Returns</strong>: <code>{     symbols: Symbol[];     exported: Symbol[];     references: Map&lt;Symbol, Identifier[]&gt;;     typechecker: TypeChecker; }</code> 
+<strong>Returns</strong>: <code>{     symbols: Symbol[];     exported: Symbol[];     references: Map&lt;Symbol, Identifier[]&gt;;     typechecker: TypeChecker; }</code> A set of data including all used symbols, exported symbols, references and the typechecker instance.
 
 </details>
+
+<strong>Examples</strong>
+
+```ts
+ import { collect } from 'dts-apigen';
+
+ const { exported } = collect('src/index.ts');
+ exported.forEach((exportedSymbol) => {
+    console.log('exporting', exportedSymbol.getName());
+ });
+ ```
 
 
 
@@ -219,7 +261,11 @@
 <details>
 <summary><strong id="bundle"><code>method</code>  bundle</strong></summary><br />
 
-<p></p>
+<p>
+
+Create a bundled definition file for a module.
+
+</p>
 
 <details>
 <summary>
@@ -240,16 +286,29 @@
             <td>fileName</td>
             <td><code>string</code></td>
             <td align="center"></td>
-            <td></td>
+            <td>The module entry file.</td>
         </tr>
     </tbody>
 </table>
 
-<strong>Returns</strong>: <code>SourceFile</code> 
+<strong>Returns</strong>: <code>SourceFile</code> The generated source file with all exported symbols.
 
 </details>
 
+<strong>Examples</strong>
 
+```ts
+ import { createPrinter } from 'typescript';
+ import { bundle } from 'dts-apigen';
+
+ const sourceFile = bundle('src/index.ts');
+ const code = createPrinter().printFile(resultFile);
+ console.log(code);
+ ```
+
+<strong>See also</strong>
+
+* <a href="#collect">collect</a> It uses the `collect` method to collect all required symbols.
 
 </details>
 
@@ -258,13 +317,19 @@
 <details>
 <summary><strong id="transformers"><code>constant</code>  transformers</strong></summary><br />
 
-<p>The full list of JSDoc transformers.</p>
+<p>
+
+The full list of JSDoc transformers.
+
+</p>
 
 
 
 <strong>Type:</strong>
 
 <pre>TransformerFactory&lt;SourceFile&gt;[]</pre>
+
+
 
 </details>
 
@@ -273,7 +338,11 @@
 <details>
 <summary><strong id="templates"><code>constant</code>  templates</strong></summary><br />
 
-<p>A list of template factories for documentation generation.</p>
+<p>
+
+A list of template factories for documentation generation.
+
+</p>
 
 
 
@@ -283,6 +352,8 @@
     [key: string]: <a href="#templatefactory">TemplateFactory</a>&lt;<a href="#templateoptions">TemplateOptions</a>&gt;;
 }</pre>
 
+
+
 </details>
 
 <hr />
@@ -290,8 +361,12 @@
 <details>
 <summary><strong id="templateoptions"><code>type</code>  TemplateOptions</strong></summary><br />
 
-<p>The options to pass to the template generator.
-`out` property is always required.</p>
+<p>
+
+The options to pass to the template generator.
+`out` property is always required.
+
+</p>
 
 
 
@@ -300,6 +375,8 @@
     [key: string]: any;
 }</pre>
 
+
+
 </details>
 
 <hr />
@@ -307,10 +384,16 @@
 <details>
 <summary><strong id="templatefactory"><code>type</code>  TemplateFactory</strong></summary><br />
 
-<p>A function that generate documentation using source files, package json data and template options.</p>
+<p>
+
+A function that generate documentation using source files, package json data and template options.
+
+</p>
 
 
 
 <pre>(sourceFile: SourceFile, options: T): void</pre>
+
+
 
 </details>

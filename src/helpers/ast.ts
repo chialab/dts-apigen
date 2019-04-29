@@ -51,9 +51,50 @@ export function getJSDocDescription(node: Node & { jsDoc?: any[] }): string {
  * @param node The scope node
  * @return A list of examples for the node
  */
-export function getJSDocExamples(node: Node & { jsDoc?: any[] }): string[] {
+export function getJSDocExamples(node: Node & { jsDoc?: any[] }): JSDocTag[] {
     let tags = getJSDocTagsByName(node, 'example') || [];
-    return tags.map((tag) => tag.comment.replace(/[ ]*\*/g, ''));
+    return tags.map((tag) => {
+        let res = Object.assign({}, tag);
+        res.comment = res.comment.replace(/[ ]*\*/g, '');
+        return res;
+    });
+}
+
+type JSDocSeeTagLink = {
+    reference: string | Node;
+    text: string;
+}
+
+export type JSDocSeeTag = JSDocTag & {
+    interpolated: (string | JSDocSeeTagLink)[];
+};
+
+/**
+ * Get the JSDoc see links for a node
+ * @param node The scope node
+ * @return A list of see links for the node
+ */
+export function getJSDocSeeLinks(node: Node & { jsDoc?: any[] }): JSDocSeeTag[] {
+    let tags = getJSDocTagsByName(node, 'see') || [];
+    let sourceFile = node.getSourceFile();
+    return tags.map((tag) => {
+        let res = Object.assign({
+            interpolated: [],
+        }, tag);
+        let chunks = tag.comment.split(/((?:\[[^]]*\])?{@link [^\s}|]*(?:[|\s][^}]*)?})/ig);
+        chunks.forEach((chunk, index) => {
+            if (index % 2 === 0) {
+                res.interpolated.push(chunk);
+            } else {
+                let match = chunk.match(/(?:\[([^]]*)\])?{@link ([^\s}|]*)(?:[|\s]([^}]*))?}/i);
+                res.interpolated.push({
+                    text: match[1] || match[3] || match[2],
+                    reference: match[2],
+                });
+            }
+        });
+        return res;
+    });
 }
 
 /**

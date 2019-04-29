@@ -30,6 +30,22 @@ function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: Map<
     }
 }
 
+/**
+ * Create a bundled definition file for a module.
+ * @param fileName The module entry file.
+ * @return The generated source file with all exported symbols.
+ * 
+ * @example
+ * ```ts
+ * import { createPrinter } from 'typescript';
+ * import { bundle } from 'dts-apigen';
+ * 
+ * const sourceFile = bundle('src/index.ts');
+ * const code = createPrinter().printFile(resultFile);
+ * console.log(code);
+ * ```
+ * @see {@link collect} It uses the `collect` method to collect all required symbols.
+ */
 export function bundle(fileName: string) {
     const { typechecker, symbols, references, exported } = collect(fileName);
     const collected: Map<string, Symbol> = new Map();

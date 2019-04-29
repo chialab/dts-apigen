@@ -255,6 +255,21 @@ function createCompilerHost(options: CompilerOptions) {
     return { host, collector, getFileNames };
 }
 
+/**
+ * Collect typechecker symbols for a module.
+ * @param fileName The module entry file.
+ * @return A set of data including all used symbols, exported symbols, references and the typechecker instance.
+ * 
+ * @example
+ * ```ts
+ * import { collect } from 'dts-apigen';
+ * 
+ * const { exported } = collect('src/index.ts');
+ * exported.forEach((exportedSymbol) => {
+ *    console.log('exporting', exportedSymbol.getName());
+ * });
+ * ```
+ */
 export function collect(fileName: string) {
     const compilerOptions: CompilerOptions = {
         target: ScriptTarget.ESNext,

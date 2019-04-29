@@ -1,8 +1,8 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, isSourceFile, isIdentifier, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode } from 'typescript';
+import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, isSourceFile, isIdentifier, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode, JSDocTag } from 'typescript';
 import { ensureFile } from '../helpers/fs';
-import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, isExported } from '../helpers/ast';
+import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, getJSDocSeeLinks, isExported, JSDocSeeTag } from '../helpers/ast';
 import { TemplateOptions } from './index';
 
 type MarkdownTemplateOptions = TemplateOptions & {
@@ -117,6 +117,40 @@ function collectReferences(statements: NodeArray<Statement>) {
         types,
         references,
     }
+}
+
+function renderSamples(tags: JSDocTag[]) {
+    return tags
+        .map((tag) => tag.comment)
+        .join('\n\n')
+        .replace(/</g, '&lt;');
+}
+
+function renderSeeAlso(tags: JSDocSeeTag[], references, options) {
+    return tags
+        .map((tag) => {
+            let interpolated = tag.interpolated;
+            return interpolated
+                .map((chunk) => {
+                    if (typeof chunk === 'string') {
+                        return chunk;
+                    }
+                    let node = references.find((node) => nameToString(node) === chunk.reference);
+                    if (node) {
+                        return toLink(node, options);
+                    }
+                    return `[${chunk.text}](${chunk.reference})`;
+                })
+                .join('');
+        })
+        .map((text) => `* ${text}`)
+        .join('\n\n');
+}
+
+function collapseContent(content: string): string {
+    return `<details>
+${content.replace(/<h3([^>]*)>/i, '<summary><strong$1>').replace('</h3>', '</strong></summary><br />')}
+</details>`;
 }
 
 function renderType(type: TypeNode|TypeElement|TypeParameterDeclaration, references: (TypeAliasDeclaration|InterfaceDeclaration)[], options: MarkdownTemplateOptions): string {
@@ -257,12 +291,6 @@ ${types.map((type) => toLink(type, options)).join(', ')}` : ''}
 `;
 }
 
-function collapseContent(content: string): string {
-    return `<details>
-${content.replace(/<h3([^>]*)>/i, '<summary><strong$1>').replace('</h3>', '</strong></summary><br />')}
-</details>`;
-}
-
 function generateModule(statements: NodeArray<Statement>, globalRefs, options, collapse) {
     let members = collectReferences(statements);
     let references = [...globalRefs, ...members.references];
@@ -350,7 +378,11 @@ function generateNamespace(ns: ModuleDeclaration, references, options) {
     let description = getJSDocDescription(ns);
     return `<h3 id="${nameToId(ns)}">${BADGES.namespace} ${nameToString(ns)}</h3>
 
-<p>${description ? description.trim() : ''}</p>
+<p>
+
+${description ? description.trim() : ''}
+
+</p>
 
 ${generateModule((ns.body as any).statements, references || [], options, false)}`;
 }
@@ -362,6 +394,7 @@ function generateSource(source: SourceFile, options) {
 function generateClass(clazz: ClassDeclaration, references, options) {
     let description = getJSDocDescription(clazz);
     let samples = getJSDocExamples(clazz);
+    let seeAlso = getJSDocSeeLinks(clazz);
     let instanceProperties: PropertyDeclaration[] = [];
     let staticProperties: PropertyDeclaration[] = [];
     clazz.members
@@ -397,11 +430,15 @@ function generateClass(clazz: ClassDeclaration, references, options) {
 
 ${clazz.heritageClauses && clazz.heritageClauses.length ? `<strong>Extends:</strong> ${renderType(clazz.heritageClauses[0].types[0], references, options)}` : ''}
 
-<p>${description ? description.trim() : ''}</p>
+<p>
+
+${description ? description.trim() : ''}
+
+</p>
 
 ${samples.length ? `<strong>Examples</strong>
 
-${samples.join('\n\n').replace(/</g, '&lt;')}` : ''}
+${renderSamples(samples)}` : ''}
 
 ${instanceProperties.length ? `<strong>Properties</strong>
 
@@ -452,6 +489,10 @@ ${Object.keys(staticMethods).length ? `<strong>Static methods</strong>
 
 ${Object.values(staticMethods).map((methodList) => generateMethod(methodList, references, options)).join('\n\n')}
 `: ''}
+
+${seeAlso.length ? `<strong>See also</strong>
+
+${renderSeeAlso(seeAlso, references, options)}` : ''}
 `;
 }
 
@@ -459,9 +500,14 @@ function generateMethod(methodDeclarationList: (FunctionDeclaration|MethodDeclar
     let name = nameToString(methodDeclarationList[0]);
     let description = getJSDocDescription(methodDeclarationList[0]);
     let samples = getJSDocExamples(methodDeclarationList[0]);
+    let seeAlso = getJSDocSeeLinks(methodDeclarationList[0]);
     return `<h3 id="${nameToId(methodDeclarationList[0])}">${BADGES.method} ${name}</h3>
 
-<p>${description ? description.trim() : ''}</p>
+<p>
+
+${description ? description.trim() : ''}
+
+</p>
 
 ${methodDeclarationList.map((method) => `<details>
 <summary>
@@ -494,30 +540,44 @@ ${method.parameters.length ? `<strong>Params</strong>
 
 ${samples.length ? `<strong>Examples</strong>
 
-${samples.join('\n\n')}` : ''}
+${renderSamples(samples)}` : ''}
+
+${seeAlso.length ? `<strong>See also</strong>
+
+${renderSeeAlso(seeAlso, references, options)}` : ''}
 `;
 }
 
 function generateConstant(constant: VariableDeclaration, references, options) {
     let description = getJSDocDescription(constant) || getJSDocDescription(constant.parent.parent);
     let samples = getJSDocExamples(constant);
+    let seeAlso = getJSDocSeeLinks(constant);
     return `<h3 id="${nameToId(constant)}">${BADGES.constant} ${nameToString(constant)}</h3>
 
-<p>${description ? description.trim() : ''}</p>
+<p>
+
+${description ? description.trim() : ''}
+
+</p>
 
 ${samples.length ? `<strong>Examples</strong>
 
-${samples.join('\n\n')}` : ''}
+${renderSamples(samples)}` : ''}
 
 ${constant.type ? `<strong>Type:</strong>
 
 <pre>${renderType(constant.type, references, options)}</pre>` : ''}
+
+${seeAlso.length ? `<strong>See also</strong>
+
+${renderSeeAlso(seeAlso, references, options)}` : ''}
 `;
 }
 
 function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, references, options) {
     let description = getJSDocDescription(type);
     let samples = getJSDocExamples(type);
+    let seeAlso = getJSDocSeeLinks(type);
     let declarations;
     if (isTypeAliasDeclaration(type)) {
         declarations = renderType(type.type, references, options);
@@ -526,13 +586,21 @@ function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, reference
     }
     return `<h3 id="${nameToId(type)}">${BADGES.type} ${nameToString(type)}</h3>
 
-<p>${description ? description.trim() : ''}</p>
+<p>
+
+${description ? description.trim() : ''}
+
+</p>
 
 ${samples.length ? `<strong>Examples</strong>
 
-${samples.join('\n\n')}` : ''}
+${renderSamples(samples)}` : ''}
 
 <pre>${declarations}</pre>
+
+${seeAlso.length ? `<strong>See also</strong>
+
+${renderSeeAlso(seeAlso, references, options)}` : ''}
 `;
 }
 
