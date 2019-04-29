@@ -14,12 +14,12 @@ type MarkdownTemplateOptions = TemplateOptions & {
 type FunctionDeclarations = { [key: string]: FunctionDeclaration[] };
 
 const BADGES = {
-    'module': '<small>module</small> ',
-    'namespace': '<small>namespace</small> ',
-    'method': '<small>method</small> ',
-    'class': '<small>class</small> ',
-    'constant': '<small>constant</small> ',
-    'type': '<small>type</small> ',
+    'module': '<code>module</code> ',
+    'namespace': '<code>namespace</code> ',
+    'method': '<code>method</code> ',
+    'class': '<code>class</code> ',
+    'constant': '<code>constant</code> ',
+    'type': '<code>type</code> ',
 };
 
 function nameToString(node: Node): string {

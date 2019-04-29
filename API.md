@@ -21,7 +21,7 @@
 <hr />
 
 <details>
-<summary><strong id="createcompilerhost"><small>method</small>  createCompilerHost</strong></summary><br />
+<summary><strong id="createcompilerhost"><code>method</code>  createCompilerHost</strong></summary><br />
 
 <p>Create a custom CompilerHost that treats JS files as regular TS files in order to generate declarations.</p>
 
@@ -70,7 +70,7 @@
 <hr />
 
 <details>
-<summary><strong id="createprogram"><small>method</small>  createProgram</strong></summary><br />
+<summary><strong id="createprogram"><code>method</code>  createProgram</strong></summary><br />
 
 <p>Create a TypeScript program with custom transformers and custom resolution for JS files</p>
 
@@ -129,7 +129,7 @@
 <hr />
 
 <details>
-<summary><strong id="generate"><small>method</small>  generate</strong></summary><br />
+<summary><strong id="generate"><code>method</code>  generate</strong></summary><br />
 
 <p></p>
 
@@ -173,7 +173,7 @@
 <hr />
 
 <details>
-<summary><strong id="collect"><small>method</small>  collect</strong></summary><br />
+<summary><strong id="collect"><code>method</code>  collect</strong></summary><br />
 
 <p></p>
 
@@ -217,7 +217,7 @@
 <hr />
 
 <details>
-<summary><strong id="bundle"><small>method</small>  bundle</strong></summary><br />
+<summary><strong id="bundle"><code>method</code>  bundle</strong></summary><br />
 
 <p></p>
 
@@ -256,7 +256,7 @@
 <hr />
 
 <details>
-<summary><strong id="transformers"><small>constant</small>  transformers</strong></summary><br />
+<summary><strong id="transformers"><code>constant</code>  transformers</strong></summary><br />
 
 <p>The full list of JSDoc transformers.</p>
 
@@ -271,7 +271,7 @@
 <hr />
 
 <details>
-<summary><strong id="templates"><small>constant</small>  templates</strong></summary><br />
+<summary><strong id="templates"><code>constant</code>  templates</strong></summary><br />
 
 <p>A list of template factories for documentation generation.</p>
 
@@ -288,7 +288,7 @@
 <hr />
 
 <details>
-<summary><strong id="templateoptions"><small>type</small>  TemplateOptions</strong></summary><br />
+<summary><strong id="templateoptions"><code>type</code>  TemplateOptions</strong></summary><br />
 
 <p>The options to pass to the template generator.
 `out` property is always required.</p>
@@ -305,7 +305,7 @@
 <hr />
 
 <details>
-<summary><strong id="templatefactory"><small>type</small>  TemplateFactory</strong></summary><br />
+<summary><strong id="templatefactory"><code>type</code>  TemplateFactory</strong></summary><br />
 
 <p>A function that generate documentation using source files, package json data and template options.</p>
 
