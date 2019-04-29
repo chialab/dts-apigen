@@ -25,6 +25,8 @@
 <details>
 <summary><strong id="createcompilerhost"><code>method</code>  createCompilerHost</strong></summary><br />
 
+
+
 <p>
 
 Create a custom CompilerHost that treats JS files as regular TS files in order to generate declarations.
@@ -79,6 +81,8 @@ Create a custom CompilerHost that treats JS files as regular TS files in order t
 
 <details>
 <summary><strong id="createprogram"><code>method</code>  createProgram</strong></summary><br />
+
+
 
 <p>
 
@@ -145,6 +149,8 @@ Create a TypeScript program with custom transformers and custom resolution for J
 <details>
 <summary><strong id="generate"><code>method</code>  generate</strong></summary><br />
 
+
+
 <p>
 
 Generate .d.ts files for TypeScript and/or JavaScript files.
@@ -203,6 +209,8 @@ Generate .d.ts files for TypeScript and/or JavaScript files.
 
 <details>
 <summary><strong id="collect"><code>method</code>  collect</strong></summary><br />
+
+
 
 <p>
 
@@ -263,6 +271,8 @@ Collect typechecker symbols for a module.
 <details>
 <summary><strong id="bundle"><code>method</code>  bundle</strong></summary><br />
 
+
+
 <p>
 
 Create a bundled definition file for a module.
@@ -319,6 +329,8 @@ Create a bundled definition file for a module.
 <details>
 <summary><strong id="transformers"><code>constant</code>  transformers</strong></summary><br />
 
+
+
 <p>
 
 The full list of JSDoc transformers.
@@ -339,6 +351,8 @@ The full list of JSDoc transformers.
 
 <details>
 <summary><strong id="templates"><code>constant</code>  templates</strong></summary><br />
+
+
 
 <p>
 

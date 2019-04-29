@@ -119,7 +119,6 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @class (synonyms: @constructor)
 * @constructs
 * @default (synonyms: @defaultvalue)
-* @deprecated
 * @exports
 * @external (synonyms: @host)
 * @function (synonyms: @func, @method)
@@ -138,7 +137,6 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @package
 * @property (synonyms: @prop)
 * @requires
-* @since
 * @static
 * @this
 * @type

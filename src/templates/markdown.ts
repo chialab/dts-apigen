@@ -2,7 +2,7 @@ import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode, JSDocTag, isEnumDeclaration, EnumDeclaration, createPrinter, EmitHint } from 'typescript';
 import { ensureFile } from '../helpers/fs';
-import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, getJSDocSeeLinks, isExported, JSDocSeeTag } from '../helpers/ast';
+import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, getJSDocSeeLinks, isExported, JSDocSeeTag, getJSDocTagByName } from '../helpers/ast';
 import { TemplateOptions } from './index';
 
 type MarkdownTemplateOptions = TemplateOptions & {
@@ -152,6 +152,22 @@ function renderSeeAlso(tags: JSDocSeeTag[], references, options) {
         })
         .map((text) => `* ${text}`)
         .join('\n\n');
+}
+
+function renderInfo(node: Node) {
+    let deprecated = getJSDocTagByName(node, 'deprecated');
+    let since = getJSDocTagByName(node, 'since');
+    if (!deprecated && !since) {
+        return '';
+    }
+    let message = '';
+    if (deprecated) {
+        message += `**Deprecated** ${deprecated.comment || ''}  \n`;
+    }
+    if (since && since.comment) {
+        message += `**Since** ${since.comment}  \n`;
+    }
+    return `${message}`;
 }
 
 function collapseContent(content: string): string {
@@ -403,6 +419,8 @@ function generateNamespace(ns: ModuleDeclaration, references, options) {
     let description = getJSDocDescription(ns);
     return `<h3 id="${nameToId(ns)}">${BADGES.namespace} ${nameToString(ns)}</h3>
 
+${renderInfo(ns)}
+
 <p>
 
 ${description ? description.trim() : ''}
@@ -452,6 +470,8 @@ function generateClass(clazz: ClassDeclaration, references, options) {
             }
         });
     return `<h3 id="${nameToId(clazz)}">${BADGES.class} ${nameToString(clazz)}</h3>
+    
+${renderInfo(clazz)}
 
 ${clazz.heritageClauses && clazz.heritageClauses.length ? `<strong>Extends:</strong> ${renderType(clazz.heritageClauses[0].types[0], references, options)}` : ''}
 
@@ -528,6 +548,8 @@ function generateMethod(methodDeclarationList: (FunctionDeclaration|MethodDeclar
     let seeAlso = getJSDocSeeLinks(methodDeclarationList[0]);
     return `<h3 id="${nameToId(methodDeclarationList[0])}">${BADGES.method} ${name}</h3>
 
+${renderInfo(methodDeclarationList[0])}
+
 <p>
 
 ${description ? description.trim() : ''}
@@ -579,6 +601,8 @@ function generateConstant(constant: VariableDeclaration, references, options) {
     let seeAlso = getJSDocSeeLinks(constant);
     return `<h3 id="${nameToId(constant)}">${BADGES.constant} ${nameToString(constant)}</h3>
 
+${renderInfo(constant)}
+
 <p>
 
 ${description ? description.trim() : ''}
@@ -604,6 +628,8 @@ function generateEnum(enumDecl: EnumDeclaration, references, options) {
     let samples = getJSDocExamples(enumDecl);
     let seeAlso = getJSDocSeeLinks(enumDecl);
     return `<h3 id="${nameToId(enumDecl)}">${BADGES.enum} ${nameToString(enumDecl)}</h3>
+
+${renderInfo(enumDecl)}
 
 <p>
 
