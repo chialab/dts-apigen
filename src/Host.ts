@@ -1,4 +1,4 @@
-import { CompilerOptions, CompilerHost, createCompilerHost as tsCreateCompilerHost, SyntaxKind, SourceFile, createSourceFile } from 'typescript';
+import { CompilerOptions, CompilerHost, createCompilerHost as tsCreateCompilerHost, SyntaxKind, SourceFile, createSourceFile, isSourceFile } from 'typescript';
 import { transformSync } from '@babel/core';
 
 /**
@@ -13,43 +13,38 @@ export function createCompilerHost(options: CompilerOptions, setParentNodes?: bo
     const originalGetSourceFile = host.getSourceFile;
     host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) => {
         let source: SourceFile = originalGetSourceFile.call(host, fileName, languageVersion, onError, shouldCreateNewSourceFile);
-        if (source) {
-            switch (source.kind) {
-                case SyntaxKind.SourceFile: {
-                    if (!!(source.flags & 65536)) { // js file detected
-                        let content = source.text;
-                        let result;
-                        try {
-                            result = transformSync(content, {
-                                filename: fileName,
-                                plugins: [
-                                    require('@cureapp/babel-plugin-flow-to-typescript'),
-                                ],
-                            });
-                        } catch (error) {
-                            //
-                        }
-                        try {
-                            result = transformSync(result ? result.code : content, {
-                                filename: fileName,
-                                plugins: [
-                                    require('@babel/plugin-syntax-jsx'),
-                                    require('@babel/plugin-syntax-typescript'),
-                                    ...(require('./jsdoc-plugins/index').plugins),
-                                ],
-                            });
-                        } catch (error) {
-                            console.error('Unable to run JSDoc transformers', error);
-                        }
-
-                        if (result) {
-                            source = createSourceFile(fileName, result.code, languageVersion, true);
-                        }
-                        source.flags = 0;
-                    }
-                    break;
+        if (source && isSourceFile(source) && !source.isDeclarationFile) {
+            let isJavaScript = !!(source.flags & 65536);
+            let content = source.text;
+            if (isJavaScript) {
+                try {
+                    let result = transformSync(content, {
+                        filename: fileName,
+                        plugins: [
+                            require('@cureapp/babel-plugin-flow-to-typescript'),
+                        ],
+                    });
+                    content = result.code;
+                } catch (error) {
+                    //
                 }
             }
+            try {
+                let result = transformSync(content, {
+                    filename: fileName,
+                    plugins: [
+                        require('@babel/plugin-syntax-jsx'),
+                        require('@babel/plugin-syntax-typescript'),
+                        ...(require('./jsdoc-plugins/index').plugins),
+                    ],
+                });
+                content = result.code;
+            } catch (error) {
+                console.error('Unable to run JSDoc transformers', error);
+            }
+
+            source = createSourceFile(fileName, content, languageVersion, true);
+            source.flags = 0;
         }
         return source;
     }

@@ -108,6 +108,7 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @protected
 * @readonly
 * @return
+* @this
 * @typedef
 
 ### Partially supported tags
@@ -138,7 +139,6 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @package
 * @requires
 * @static
-* @this
 * @type
 * @variation
 * @yields (synonyms: @yield) -->

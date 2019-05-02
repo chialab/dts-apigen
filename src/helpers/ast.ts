@@ -1,4 +1,4 @@
-import { Node, getJSDocTags, JSDocTag, FunctionDeclaration, MethodDeclaration, isJSDocParameterTag, SyntaxKind, createModifier, createModifiersFromModifierFlags, Modifier, isModuleDeclaration, visitNode, visitNodes, JSDoc, createSourceFile, ScriptTarget, createPrinter, EmitHint } from 'typescript';
+import { Node, getJSDocTags, JSDocTag, FunctionDeclaration, MethodDeclaration, isJSDocParameterTag, SyntaxKind, createModifier, createModifiersFromModifierFlags, Modifier, isModuleDeclaration, visitNode, visitNodes, JSDoc, createSourceFile, ScriptTarget, createPrinter, EmitHint, Type, createVariableStatement, createVariableDeclarationList, createVariableDeclaration, TypeNode } from 'typescript';
 import { transformFromAstSync, parseSync } from '@babel/core';
 import { program, VariableDeclaration } from '@babel/types';
 
@@ -392,6 +392,14 @@ export function parseTypeExpression(text: string): any {
         }
         return value;
     });
+}
+
+export function convertType(type: TypeNode): any {
+    let ast = createVariableStatement([], createVariableDeclarationList([
+        createVariableDeclaration('A', type)
+    ]));
+    let decl = typescriptToBabel(ast);
+    return decl.declarations[0].id.typeAnnotation;
 }
 
 export function babelToTypescript(ast): Node {

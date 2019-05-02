@@ -4,6 +4,7 @@ import { NamespaceTransformer } from './transformers/NamespaceTransformer';
 import { AccessTransformer } from './transformers/AccessTransformer';
 import { EnumTransformer } from './transformers/EnumTransformer';
 import { PropertyTransformer } from './transformers/PropertyTransformer';
+import { ThisTransformer } from './transformers/ThisTransformer';
 import { VariableTransformer } from './transformers/VariableTransformer';
 
 export const plugins = [
@@ -13,5 +14,6 @@ export const plugins = [
     AccessTransformer,
     EnumTransformer,
     PropertyTransformer,
+    ThisTransformer,
     VariableTransformer,
 ];
