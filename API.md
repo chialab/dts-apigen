@@ -13,7 +13,7 @@
 
 **Constants**
 
-<a href="#transformers">transformers</a>, <a href="#templates">templates</a>
+<a href="#templates">templates</a>
 
 
 
@@ -321,29 +321,6 @@ Create a bundled definition file for a module.
 <strong>See also</strong>
 
 * <a href="#collect">collect</a> It uses the `collect` method to collect all required symbols.
-
-</details>
-
-<hr />
-
-<details>
-<summary><strong id="transformers"><code>constant</code>  transformers</strong></summary><br />
-
-
-
-<p>
-
-The full list of JSDoc transformers.
-
-</p>
-
-
-
-<strong>Type:</strong>
-
-<pre>TransformerFactory&lt;SourceFile&gt;[]</pre>
-
-
 
 </details>
 
