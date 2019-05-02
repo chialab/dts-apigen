@@ -18,21 +18,29 @@ export function createCompilerHost(options: CompilerOptions, setParentNodes?: bo
                 case SyntaxKind.SourceFile: {
                     if (!!(source.flags & 65536)) { // js file detected
                         let content = source.text;
-                        let result = transformSync(content, {
+                        let result;
+                        try {
+                            result = transformSync(content, {
+                                filename: fileName,
+                                plugins: [
+                                    require('@cureapp/babel-plugin-flow-to-typescript'),
+                                ],
+                            });
+                        } catch (error) {
+                            //
+                        }
+                        result = transformSync(result ? result.code : content, {
                             filename: fileName,
                             plugins: [
-                                require('@cureapp/babel-plugin-flow-to-typescript'),
-                            ],
-                        });
-                        let { code } = transformSync(result.code, {
-                            filename: fileName,
-                            plugins: [
+                                require('@babel/plugin-syntax-jsx'),
                                 require('@babel/plugin-syntax-typescript'),
                                 ...(require('./jsdoc-plugins/index').plugins),
                             ],
                         });
 
-                        source = createSourceFile(fileName, code, languageVersion, true);
+                        if (result) {
+                            source = createSourceFile(fileName, result.code, languageVersion, true);
+                        }
                         source.flags = 0;
                     }
                     break;
