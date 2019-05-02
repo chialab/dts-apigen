@@ -3,6 +3,7 @@ import { TypedefTransformer } from './transformers/TypedefTransformer';
 import { NamespaceTransformer } from './transformers/NamespaceTransformer';
 import { AccessTransformer } from './transformers/AccessTransformer';
 import { EnumTransformer } from './transformers/EnumTransformer';
+import { PropertyTransformer } from './transformers/PropertyTransformer';
 import { VariableTransformer } from './transformers/VariableTransformer';
 
 export const plugins = [
@@ -11,5 +12,6 @@ export const plugins = [
     NamespaceTransformer,
     AccessTransformer,
     EnumTransformer,
+    PropertyTransformer,
     VariableTransformer,
 ];

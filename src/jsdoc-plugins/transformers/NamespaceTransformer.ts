@@ -5,11 +5,12 @@ export function NamespaceTransformer({ types }) {
         name: 'jsdoc-transform-namespace',
         visitor: {
             VariableDeclaration(path) {
-                let tags = (path.node.leadingComments || [])
-                    .map((comment) => {
-                        let text = `/*${comment.value}*/`;
-                        return parseComment(text);
-                    })
+                let comments = path.node.leadingComments || [];
+                if (path.parentPath.isExportDeclaration()) {
+                    comments = path.parent.leadingComments || [];
+                }
+                let tags = comments
+                    .map((comment) => parseComment(`/*${comment.value}*/`))
                     .filter(Boolean)
                     .reduce((list, comment) => {
                         if (comment.tags) {
@@ -21,23 +22,26 @@ export function NamespaceTransformer({ types }) {
                 if (!isNamespace) {
                     return;
                 }
-                if (path.get('declarations').length > 1) {
+                let declarations = path.get('declarations');
+                if (!declarations || declarations.length > 1) {
                     return;
                 }
-                let variableNode = path.get('declarations')[0];
-                let initializer = variableNode.init;
+                let variableNode = declarations[0];
+                let initializer = variableNode.get('init');
                 if (!initializer || !initializer.isObjectExpression()) {
                     return;
                 }
-                let declaration = types.tsModuleDeclaration(variableNode.id, types.tsModuleBlock(
-                    initializer.properties.map((prop) =>
+                let declaration = types.tsModuleDeclaration(variableNode.node.id, types.tsModuleBlock(
+                    initializer.get('properties').map((prop) =>
                         types.exportNamedDeclaration(
                             types.variableDeclaration('const', [
-                                types.variableDeclarator(prop.key, prop.value)
-                            ])
+                                types.variableDeclarator(prop.node.key, prop.node.value)
+                            ]),
+                            []
                         )
                     )
                 ));
+                declaration.leadingComments = path.node.leadingComments;
                 path.replaceWith(declaration);
             },
         },

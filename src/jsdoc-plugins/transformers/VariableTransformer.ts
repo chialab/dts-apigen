@@ -12,10 +12,7 @@ export function VariableTransformer({ types }) {
                     comments = path.parent.leadingComments || [];
                 }
                 let tags = comments
-                    .map((comment) => {
-                        let text = `/*${comment.value}*/`;
-                        return parseComment(text);
-                    })
+                    .map((comment) => parseComment(`/*${comment.value}*/`))
                     .filter(Boolean)
                     .reduce((list, comment) => {
                         if (comment.tags) {

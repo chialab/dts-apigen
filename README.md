@@ -104,6 +104,7 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @enum
 * @param
 * @private
+* @property (synonyms: @prop)
 * @protected
 * @readonly
 * @return
@@ -113,7 +114,7 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @kind
 * @namespace (only for declarations)
 
-### Unsupported tags (right now...)
+<!-- ### Unsupported tags (right now...)
 * @augments (synonyms: @extends)
 * @callback
 * @class (synonyms: @constructor)
@@ -135,13 +136,12 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @module
 * @name
 * @package
-* @property (synonyms: @prop)
 * @requires
 * @static
 * @this
 * @type
 * @variation
-* @yields (synonyms: @yield)
+* @yields (synonyms: @yield) -->
 
 ---
 

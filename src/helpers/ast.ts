@@ -1,6 +1,6 @@
 import { Node, getJSDocTags, JSDocTag, FunctionDeclaration, MethodDeclaration, isJSDocParameterTag, SyntaxKind, createModifier, createModifiersFromModifierFlags, Modifier, isModuleDeclaration, visitNode, visitNodes, JSDoc, createSourceFile, ScriptTarget, createPrinter, EmitHint } from 'typescript';
 import { transformFromAstSync, parseSync } from '@babel/core';
-import { program } from '@babel/types';
+import { program, VariableDeclaration } from '@babel/types';
 
 /**
  * Get the original typeched node of a node
@@ -360,6 +360,38 @@ export function parseComment(text: string): JSDoc {
     }
     let ast: JSDoc = source.endOfFileToken['jsDoc'][0];
     return ast;
+}
+
+export function parseType(text: string): any {
+    let code = `let A: ${text};`;
+    let file = parseSync(code, {
+        plugins: [
+            require('@babel/plugin-syntax-typescript'),
+        ],
+    });
+    let decl = (file.program.body[0] as VariableDeclaration).declarations[0];
+    return JSON.parse(JSON.stringify((decl.id as any).typeAnnotation), (key, value) => {
+        if (key === 'loc' || key === 'start' || key === 'end') {
+            return undefined;
+        }
+        return value;
+    });
+}
+
+export function parseTypeExpression(text: string): any {
+    let code = `let A = undefined as ${text};`;
+    let file = parseSync(code, {
+        plugins: [
+            require('@babel/plugin-syntax-typescript'),
+        ],
+    });
+    let decl = (file.program.body[0] as VariableDeclaration).declarations[0];
+    return JSON.parse(JSON.stringify((decl.init as any).typeAnnotation), (key, value) => {
+        if (key === 'loc' || key === 'start' || key === 'end') {
+            return undefined;
+        }
+        return value;
+    });
 }
 
 export function babelToTypescript(ast): Node {

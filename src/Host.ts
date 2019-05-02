@@ -29,14 +29,18 @@ export function createCompilerHost(options: CompilerOptions, setParentNodes?: bo
                         } catch (error) {
                             //
                         }
-                        result = transformSync(result ? result.code : content, {
-                            filename: fileName,
-                            plugins: [
-                                require('@babel/plugin-syntax-jsx'),
-                                require('@babel/plugin-syntax-typescript'),
-                                ...(require('./jsdoc-plugins/index').plugins),
-                            ],
-                        });
+                        try {
+                            result = transformSync(result ? result.code : content, {
+                                filename: fileName,
+                                plugins: [
+                                    require('@babel/plugin-syntax-jsx'),
+                                    require('@babel/plugin-syntax-typescript'),
+                                    ...(require('./jsdoc-plugins/index').plugins),
+                                ],
+                            });
+                        } catch (error) {
+                            console.error('Unable to run JSDoc transformers', error);
+                        }
 
                         if (result) {
                             source = createSourceFile(fileName, result.code, languageVersion, true);

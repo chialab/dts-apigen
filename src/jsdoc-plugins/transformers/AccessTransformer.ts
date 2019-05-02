@@ -3,10 +3,7 @@ import { parseComment } from '../../helpers/ast';
 export function AccessTransformer({ types }) {
     const transformer = (path) => {
         let tags = (path.node.leadingComments || [])
-            .map((comment) => {
-                let text = `/*${comment.value}*/`;
-                return parseComment(text);
-            })
+            .map((comment) => parseComment(`/*${comment.value}*/`))
             .filter(Boolean)
             .reduce((list, comment) => {
                 if (comment.tags) {
@@ -40,12 +37,16 @@ export function AccessTransformer({ types }) {
                 if (path.parentPath.isExportDeclaration()) {
                     comments = path.parent.leadingComments || [];
                 }
-                comments = comments
-                    .map((comment) => {
-                        let text = `/*${comment.value}*/`;
-                        return parseComment(text);
-                    });
-                let isAbastract = comments.some((comment) => comment && comment.tags && comment.tags.some((tag) => ['abstract', 'virtual'].includes(tag.tagName.text.toLowerCase())));
+                let tags = comments
+                    .map((comment) => parseComment(`/*${comment.value}*/`))
+                    .filter(Boolean)
+                    .reduce((list, comment) => {
+                        if (comment.tags) {
+                            list.push(...comment.tags);
+                        }
+                        return list;
+                    }, []);
+                let isAbastract = tags.some((tag) => ['abstract', 'virtual'].includes(tag.tagName.text.toLowerCase()));
                 if (!isAbastract) {
                     return;
                 }

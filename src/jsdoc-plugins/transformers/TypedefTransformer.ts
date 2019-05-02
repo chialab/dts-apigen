@@ -8,10 +8,7 @@ export function TypedefTransformer({ types }) {
             Program(path) {
                 const file = path.container;
                 file.comments
-                    .map((comment) => {
-                        let text = `/*${comment.value}*/`;
-                        return parseComment(text);
-                    })
+                    .map((comment) => parseComment(`/*${comment.value}*/`))
                     .filter((comment: JSDoc) => comment && comment.tags && comment.tags.some((tag) => isJSDocTypedefTag(tag)))
                     .map((comment: JSDoc) => [comment.tags.find((tag) => isJSDocTypedefTag(tag)), comment])
                     .forEach(([tag, comment]) => {
