@@ -13,11 +13,13 @@
     "build": "rm -rf lib && tsc",
     "prepack": "rm -rf lib && tsc"
   },
-  "peerDependencies": {
-    "typescript": "^3.0.0"
-  },
   "dependencies": {
+    "@babel/core": "^7.4.4",
+    "@babel/plugin-syntax-typescript": "^7.3.3",
+    "@babel/types": "^7.4.4",
+    "@cureapp/babel-plugin-flow-to-typescript": "^0.3.7",
     "commander": "^2.19.0",
+    "typescript": "^3.0.0"
   },
   "devDependencies": {
     "@types/node": "^11.13.4"

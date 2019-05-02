@@ -1,4 +1,6 @@
-import { Node, getJSDocTags, JSDocTag, FunctionDeclaration, MethodDeclaration, isJSDocParameterTag, SyntaxKind, createModifier, createModifiersFromModifierFlags, Modifier, isModuleDeclaration, visitNode, visitNodes } from 'typescript';
+import { Node, getJSDocTags, JSDocTag, FunctionDeclaration, MethodDeclaration, isJSDocParameterTag, SyntaxKind, createModifier, createModifiersFromModifierFlags, Modifier, isModuleDeclaration, visitNode, visitNodes, JSDoc, createSourceFile, ScriptTarget, createPrinter, EmitHint } from 'typescript';
+import { transformFromAstSync, parseSync } from '@babel/core';
+import { program } from '@babel/types';
 
 /**
  * Get the original typeched node of a node
@@ -349,4 +351,34 @@ export function traverse(root: Node, callback: (node: Node) => boolean | void): 
         return node;
     }
     visit(root);
+}
+
+export function parseComment(text: string): JSDoc {
+    let source = createSourceFile('', text, ScriptTarget.ESNext);
+    if (!source.endOfFileToken['jsDoc']) {
+        return;
+    }
+    let ast: JSDoc = source.endOfFileToken['jsDoc'][0];
+    return ast;
+}
+
+export function babelToTypescript(ast): Node {
+    let { code } = transformFromAstSync(program([ast], [], 'script'));
+    let source = createSourceFile('', code, ScriptTarget.ESNext);
+    return source.statements[0];
+}
+
+export function typescriptToBabel(ast: Node): any {
+    let code = createPrinter().printNode(EmitHint.Unspecified, ast, undefined);
+    let file = parseSync(code, {
+        plugins: [
+            require('@babel/plugin-syntax-typescript'),
+        ],
+    });
+    return JSON.parse(JSON.stringify(file.program.body[0]), (key, value) => {
+        if (key === 'loc' || key === 'start' || key === 'end') {
+            return undefined;
+        }
+        return value;
+    });
 }

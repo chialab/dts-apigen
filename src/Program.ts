@@ -1,8 +1,7 @@
 import { existsSync } from 'fs';
-import { resolve, join } from 'path';
+import { resolve } from 'path';
 import { createProgram as tsCreateProgram, CompilerOptions, CompilerHost, Program, Diagnostic, SourceFile, WriteFileCallback, CancellationToken, CustomTransformers, flattenDiagnosticMessageText, ScriptTarget, getPreEmitDiagnostics, ModuleResolutionKind, getParsedCommandLineOfConfigFile, findConfigFile, sys } from 'typescript';
 import { createCompilerHost } from './Host';
-import { transformers } from './transformers/index';
 
 /**
  * Create a TypeScript program with custom transformers and custom resolution for JS files
@@ -54,11 +53,6 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
     // override the default emit method in order to inject custom transformers, collect generated declaration files and analyze the output
     const originalEmit = program.emit;
     program.emit = (targetSourceFile?: SourceFile, writeFile?: WriteFileCallback, cancellationToken?: CancellationToken, emitDeclarationOnly?: boolean, customTransformers?: CustomTransformers) => {
-        // setup custom transformers
-        customTransformers = customTransformers || {};
-        customTransformers.afterDeclarations = customTransformers.afterDeclarations || [];
-        customTransformers.afterDeclarations.push(...transformers);
-
         // call the original emit method and print diagnostic
         const result = originalEmit.call(program, targetSourceFile, writeFile, cancellationToken, true, customTransformers);
         const allDiagnostics = getPreEmitDiagnostics(program).concat(result.diagnostics);

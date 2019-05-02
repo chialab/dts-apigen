@@ -102,7 +102,6 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 * @async
 * @const
 * @enum
-* @namespace
 * @param
 * @private
 * @protected
@@ -112,6 +111,7 @@ You can find the API documentation (generated with `dts-apigen`, of course) in t
 
 ### Partially supported tags
 * @kind
+* @namespace (only for declarations)
 
 ### Unsupported tags (right now...)
 * @augments (synonyms: @extends)
