@@ -254,7 +254,7 @@ ${type.members.map((member) => `${renderType(member, references, options).replac
         return `${linked ? toLink(linked, options) : name}`;
     }
     if (isTypePredicateNode(type)) {
-        let name = nameToString(type);
+        let name = nameToString(type.type);
         let linked = references.find((item) => nameToString(item) === name);
         return `${type.parameterName.getText()} is ${linked ? toLink(linked, options) : name}`;
     }
