@@ -524,7 +524,7 @@ ${instanceProperties.length ? `<strong>Properties</strong>
 
 ${Object.keys(instanceMethods).length ? `<strong>Methods</strong>
 
-${Object.values(instanceMethods).map((methodList) => generateMethod(methodList, references, options)).join('\n\n')}
+${Object.values(instanceMethods).map((methodList) => generateMethod(methodList, references, options)).join('\n<br />\n\n')}
 `: ''}
 
 ${staticProperties.length ? `<strong>Static properties</strong>
@@ -549,7 +549,7 @@ ${staticProperties.length ? `<strong>Static properties</strong>
 
 ${Object.keys(staticMethods).length ? `<strong>Static methods</strong>
 
-${Object.values(staticMethods).map((methodList) => generateMethod(methodList, references, options)).join('\n\n')}
+${Object.values(staticMethods).map((methodList) => generateMethod(methodList, references, options)).join('\n<br />\n\n')}
 `: ''}
 
 ${seeAlso.length ? `<strong>See also</strong>
