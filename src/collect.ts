@@ -1,5 +1,5 @@
 import { resolve, dirname } from 'path';
-import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode, ModuleResolutionKind, createModuleResolutionCache, ResolvedProjectReference, SyntaxKind, isThisTypeNode, isImportSpecifier, isTypePredicateNode, isLiteralTypeNode, isQualifiedName, isEnumDeclaration, isEnumMember, isToken } from 'typescript';
+import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode, ModuleResolutionKind, createModuleResolutionCache, ResolvedProjectReference, SyntaxKind, isThisTypeNode, isImportSpecifier, isTypePredicateNode, isLiteralTypeNode, isQualifiedName, isEnumDeclaration, isEnumMember, isToken, isTypeQueryNode } from 'typescript';
 import { createProgram } from './Program';
 
 export type ReferencesMap = Map<Symbol, Identifier[]>;
@@ -168,8 +168,15 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
     } else if (isIdentifier(node)) {
         let symbol = typechecker.getSymbolAtLocation(node);
         if (symbol) {
-            addReference(references, symbol, node);
-            collectSymbol(typechecker, symbols, references, symbol);
+            let declarations = (symbol.getDeclarations() || []).filter((declaration) => !(isParameter(declaration) || isTypeParameterDeclaration(declaration)));
+            if (declarations.length) {
+                addReference(references, symbol, node);
+                collectSymbol(typechecker, symbols, references, symbol);
+            }
+        }
+    } else if (isTypeQueryNode(node)) {
+        if (node.exprName) {
+            collectNodeReferences(typechecker, symbols, references, node.exprName);
         }
     } else if (isImportTypeNode(node)) {
         let symbol = typechecker.getSymbolAtLocation(node);
@@ -203,11 +210,11 @@ function collectSymbol(typechecker: TypeChecker, symbols: Symbol[], references: 
         // already collected
         return;
     }
-    if (!symbol.getDeclarations()) {
+    if (!symbol.getDeclarations() || symbol.getDeclarations().length === 0 ) {
         return;
     }
     const firstDeclaration = symbol.getDeclarations()[0];
-    if (isExportSpecifier(firstDeclaration) || isExportAssignment(firstDeclaration)) {
+    if (isImportSpecifier(firstDeclaration) || isExportSpecifier(firstDeclaration) || isExportAssignment(firstDeclaration)) {
         collectSymbol(typechecker, symbols, references, typechecker.getAliasedSymbol(symbol));
     } else if (isSourceFile(firstDeclaration)) {
         if (firstDeclaration.fileName.includes('node_modules')) {
@@ -217,11 +224,14 @@ function collectSymbol(typechecker: TypeChecker, symbols: Symbol[], references: 
         exported.forEach((exportedSymbol) => {
             collectSymbol(typechecker, symbols, references, exportedSymbol);
         });
-    } else if (isTypeParameterDeclaration(firstDeclaration)) {
-        // ignore
-    } else if (isFunctionTypeNode(firstDeclaration) || isConstructorTypeNode(firstDeclaration)) {
-        symbol.declarations.forEach((declaration) => collectNodeReferences(typechecker, symbols, references, declaration));
     } else {
+        if (symbol.getName() === 'node' && symbol.valueDeclaration.getSourceFile().fileName.endsWith('dom.d.ts')) {
+            try {
+                throw new Error('ighi');
+            } catch (error) {
+                console.log(error.stack)
+            }
+        }
         symbols.push(symbol);
         symbol.declarations.forEach((declaration) => collectNodeReferences(typechecker, symbols, references, declaration));
     }
