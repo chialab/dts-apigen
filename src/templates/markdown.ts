@@ -172,7 +172,7 @@ function renderInfo(node: Node) {
 
 function collapseContent(content: string): string {
     return `<details>
-${content.replace(/<h3([^>]*)>/i, '<summary><strong$1>').replace('</h3>', '</strong></summary><br />')}
+${content.replace(/<strong([^>]*)>/i, '<summary><strong$1>').replace('</strong>', '</strong></summary><br />')}
 </details>`;
 }
 
@@ -434,15 +434,15 @@ function generateModule(statements: NodeArray<Statement>, globalRefs, options, c
 
 function generateNamespace(ns: ModuleDeclaration, references, options) {
     let description = getJSDocDescription(ns);
-    return `<h3 id="${nameToId(ns)}">${BADGES.namespace} ${nameToString(ns)}</h3>
+    return `<strong id="${nameToId(ns)}">${BADGES.namespace} ${nameToString(ns)}</strong>
 
 ${renderInfo(ns)}
 
-<p>
+${description ? `<p>
 
-${description ? description.trim() : ''}
+${description.trim()}
 
-</p>
+</p>` : ''}
 
 ${generateModule((ns.body as any).statements, references || [], options, false)}`;
 }
@@ -486,17 +486,17 @@ function generateClass(clazz: ClassDeclaration, references, options) {
                 instanceMethods[name].push(member);
             }
         });
-    return `<h3 id="${nameToId(clazz)}">${BADGES.class} ${nameToString(clazz)}</h3>
+    return `<strong id="${nameToId(clazz)}">${BADGES.class} ${nameToString(clazz)}</strong>
     
 ${renderInfo(clazz)}
 
 ${clazz.heritageClauses && clazz.heritageClauses.length ? `<strong>Extends:</strong> ${renderType(clazz.heritageClauses[0].types[0], references, options)}` : ''}
 
-<p>
+${description ? `<p>
 
-${description ? description.trim() : ''}
+${description.trim()}
 
-</p>
+</p>` : ''}
 
 ${samples.length ? `<strong>Examples</strong>
 
@@ -563,15 +563,16 @@ function generateMethod(methodDeclarationList: (FunctionDeclaration|MethodDeclar
     let description = getJSDocDescription(methodDeclarationList[0]);
     let samples = getJSDocExamples(methodDeclarationList[0]);
     let seeAlso = getJSDocSeeLinks(methodDeclarationList[0]);
-    return `<h3 id="${nameToId(methodDeclarationList[0])}">${BADGES.method} ${name}</h3>
+    let returnDescription = getJSDocReturnDescription(methodDeclarationList[0]);
+    return `<strong id="${nameToId(methodDeclarationList[0])}">${BADGES.method} ${name}</strong>
 
 ${renderInfo(methodDeclarationList[0])}
 
-<p>
+${description ? `<p>
 
-${description ? description.trim() : ''}
+${description.trim()}
 
-</p>
+</p>` : ''}
 
 ${methodDeclarationList.map((method) => `<details>
 <summary>
@@ -593,12 +594,12 @@ ${method.parameters.length ? `<strong>Params</strong>
             <td><code>${renderType(param.type, references, options)}</code></td>
             <td align="center">${param.questionToken ? '✓' : ''}</td>
             <td>${getJSDocParamDescription(methodDeclarationList[0], nameToString(param)) || ''}</td>`)
-                .join('</tr>\n<tr>')}` : ''}
+                .join('</tr>\n<tr>')}
         </tr>
     </tbody>
-</table>
+</table>` : ''}
 
-<strong>Returns</strong>: <code>${renderType(method.type, references, options).replace(/\n/g, ' ')}</code> ${getJSDocReturnDescription(methodDeclarationList[0]) || ''}
+<strong>Returns</strong>: <code>${renderType(method.type, references, options).replace(/\n/g, ' ')}</code> ${returnDescription || ''}
 
 </details>`).join('\n')}
 
@@ -616,15 +617,15 @@ function generateConstant(constant: VariableDeclaration, references, options) {
     let description = getJSDocDescription(constant) || getJSDocDescription(constant.parent.parent);
     let samples = getJSDocExamples(constant);
     let seeAlso = getJSDocSeeLinks(constant);
-    return `<h3 id="${nameToId(constant)}">${BADGES.constant} ${nameToString(constant)}</h3>
+    return `<strong id="${nameToId(constant)}">${BADGES.constant} ${nameToString(constant)}</strong>
 
 ${renderInfo(constant)}
 
-<p>
+${description ? `<p>
 
-${description ? description.trim() : ''}
+${description.trim()}
 
-</p>
+</p>` : ''}
 
 ${samples.length ? `<strong>Examples</strong>
 
@@ -644,15 +645,15 @@ function generateEnum(enumDecl: EnumDeclaration, references, options) {
     let description = getJSDocDescription(enumDecl);
     let samples = getJSDocExamples(enumDecl);
     let seeAlso = getJSDocSeeLinks(enumDecl);
-    return `<h3 id="${nameToId(enumDecl)}">${BADGES.enum} ${nameToString(enumDecl)}</h3>
+    return `<strong id="${nameToId(enumDecl)}">${BADGES.enum} ${nameToString(enumDecl)}</strong>
 
 ${renderInfo(enumDecl)}
 
-<p>
+${description ? `<p>
 
-${description ? description.trim() : ''}
+${description.trim()}
 
-</p>
+</p>` : ''}
 
 ${enumDecl.members.length ? `
 <table>
@@ -692,13 +693,13 @@ function generateType(type: TypeAliasDeclaration|InterfaceDeclaration, reference
     } else {
         declarations = (type.typeParameters || createNodeArray()).map((type) => renderType(type, references, options)).join('|');
     }
-    return `<h3 id="${nameToId(type)}">${BADGES.type} ${nameToString(type)}</h3>
+    return `<strong id="${nameToId(type)}">${BADGES.type} ${nameToString(type)}</strong>
 
-<p>
+${description ? `<p>
 
-${description ? description.trim() : ''}
+${description.trim()}
 
-</p>
+</p>` : ''}
 
 ${samples.length ? `<strong>Examples</strong>
 
