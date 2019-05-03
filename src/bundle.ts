@@ -160,18 +160,20 @@ export function bundle(fileName: string) {
             if (!hasModifier(node, SyntaxKind.DeclareKeyword) && !isImportDeclaration(node)) {
                 addModifier(node, SyntaxKind.DeclareKeyword);
             }
-            traverse(node, (node) => {
-                let type: ImportTypeNode = (node as any).type;
-                if (type && isImportTypeNode(type)) {
-                    let sourceSymbol = typechecker.getSymbolAtLocation(type);
+            traverse(node, (child) => {
+                if (isImportTypeNode(child)) {
+                    let sourceSymbol = typechecker.getSymbolAtLocation(child);
                     if (!sourceSymbol) {
                         return;
                     }
-                    let typeSymbol = sourceSymbol.exports.get(type.qualifier.getText() as any);
+                    let typeSymbol = sourceSymbol.exports.get(child.qualifier.getText() as any);
                     if (!typeSymbol) {
                         return;
                     }
-                    (node as any).type = createTypeReferenceNode(typeSymbol.getName(), []);
+                    for (let key in child) {
+                        delete child[key];
+                    }
+                    Object.assign(child, createTypeReferenceNode(typeSymbol.getName(), []));
                 }
             });
             return node as Statement;
