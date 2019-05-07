@@ -207,12 +207,20 @@ ${type.members.map((member) => `${renderType(member, references, options).replac
         return `${nameToString(type)}${type.questionToken ? '?' : ''}: ${renderType(type.type, references, options)}`;
     }
     if (isFunctionTypeNode(type)) {
-        return `(${
+        let typeParams = '';
+        if (type.typeParameters) {
+            typeParams += `&lt;${type.typeParameters.map((param) => renderType(param, references, options)).join(', ')}&gt;`;
+        }
+        return `${typeParams}(${
             type.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)}`).join(', ')
         }): ${renderType(type.type, references, options)}`;
     }
     if (isMethodSignature(type)) {
-        return `${nameToString(type)}(${
+        let typeParams = '';
+        if (type.typeParameters) {
+            typeParams += `&lt;${type.typeParameters.map((param) => renderType(param, references, options)).join(', ')}&gt;`;
+        }
+        return `${nameToString(type)}${typeParams}(${
             type.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)}`).join(', ')
         }): ${renderType(type.type, references, options)}`;
     }
@@ -444,11 +452,11 @@ ${description.trim()}
 
 </p>` : ''}
 
-${generateModule((ns.body as any).statements, references || [], options, false)}`;
+${generateModule((ns.body as any).statements, references || [], options, true)}`;
 }
 
 function generateSource(source: SourceFile, options) {
-    return generateModule(source.statements, [], options, true);
+    return generateModule(source.statements, [], options, false);
 }
 
 function generateClass(clazz: ClassDeclaration, references, options) {
