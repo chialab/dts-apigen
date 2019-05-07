@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode, JSDocTag, isEnumDeclaration, EnumDeclaration, createPrinter, EmitHint, isTypeOperatorNode } from 'typescript';
+import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode, JSDocTag, isEnumDeclaration, EnumDeclaration, createPrinter, EmitHint, isTypeOperatorNode, isConstructorDeclaration } from 'typescript';
 import { ensureFile } from '../helpers/fs';
 import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, getJSDocSeeLinks, isExported, JSDocSeeTag, getJSDocTagByName } from '../helpers/ast';
 import { TemplateOptions } from './index';
@@ -482,10 +482,10 @@ function generateClass(clazz: ClassDeclaration, references, options) {
         __proto__: null,
     };
     clazz.members
-        .filter((member) => isMethodDeclaration(member))
+        .filter((member) => isMethodDeclaration(member) || isConstructorDeclaration(member))
         .map((member) => member as MethodDeclaration)
         .forEach((member) => {
-            let name = nameToString(member);
+            let name = isConstructorDeclaration(member) ? 'constructor' : nameToString(member);
             if (member.modifiers && member.modifiers.some((mod) => mod.kind === SyntaxKind.StaticKeyword)) {
                 staticMethods[name] = staticMethods[name] || [];
                 staticMethods[name].push(member);
@@ -566,15 +566,16 @@ ${renderSeeAlso(seeAlso, references, options)}` : ''}
 `;
 }
 
-function generateMethod(methodDeclarationList: (FunctionDeclaration|MethodDeclaration)[], references, options: MarkdownTemplateOptions) {
-    let name = nameToString(methodDeclarationList[0]);
-    let description = getJSDocDescription(methodDeclarationList[0]);
-    let samples = getJSDocExamples(methodDeclarationList[0]);
-    let seeAlso = getJSDocSeeLinks(methodDeclarationList[0]);
-    let returnDescription = getJSDocReturnDescription(methodDeclarationList[0]);
-    return `<strong id="${nameToId(methodDeclarationList[0])}">${BADGES.method} ${name}</strong>
+function generateMethod(methodDeclarationList: (FunctionDeclaration | MethodDeclaration)[], references, options: MarkdownTemplateOptions) {
+    let firstDeclaration = methodDeclarationList[0];
+    let name = isConstructorDeclaration(firstDeclaration) ? 'constructor' : nameToString(firstDeclaration);
+    let description = getJSDocDescription(firstDeclaration);
+    let samples = getJSDocExamples(firstDeclaration);
+    let seeAlso = getJSDocSeeLinks(firstDeclaration);
+    let returnDescription = getJSDocReturnDescription(firstDeclaration);
+    return `<strong${isConstructorDeclaration(firstDeclaration) ? '' : ` id="${nameToId(firstDeclaration)}"`}>${BADGES.method} ${name}</strong>
 
-${renderInfo(methodDeclarationList[0])}
+${renderInfo(firstDeclaration)}
 
 ${description ? `<p>
 
@@ -584,7 +585,7 @@ ${description.trim()}
 
 ${methodDeclarationList.map((method) => `<details>
 <summary>
-<code>(${method.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)})`).join(', ')}): ${renderType(method.type, references, options)}</code>
+<code>(${method.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)})`).join(', ')})${method.type ? `: ${renderType(method.type, references, options)}` : ''}</code>
 </summary><br />
 
 ${method.parameters.length ? `<strong>Params</strong>
@@ -601,14 +602,15 @@ ${method.parameters.length ? `<strong>Params</strong>
             <td>${nameToString(param)}</td>
             <td><code>${renderType(param.type, references, options)}</code></td>
             <td align="center">${param.questionToken ? '✓' : ''}</td>
-            <td>${getJSDocParamDescription(methodDeclarationList[0], nameToString(param)) || ''}</td>`)
+            <td>${getJSDocParamDescription(firstDeclaration, nameToString(param)) || ''}</td>`)
                 .join('</tr>\n<tr>')}
         </tr>
     </tbody>
 </table>` : ''}
 
-<strong>Returns</strong>: <code>${renderType(method.type, references, options).replace(/\n/g, ' ')}</code> ${returnDescription || ''}
+${method.type ? `<strong>Returns</strong>: <code>${renderType(method.type, references, options).replace(/\n/g, ' ')}</code> ${returnDescription || ''}` : ''}
 
+<br />
 </details>`).join('\n')}
 
 ${samples.length ? `<strong>Examples</strong>
