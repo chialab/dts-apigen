@@ -585,8 +585,24 @@ ${description.trim()}
 
 ${methodDeclarationList.map((method) => `<details>
 <summary>
-<code>(${method.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)}`).join(', ')})${method.type ? `: ${renderType(method.type, references, options)}` : ''}</code>
+<code>${method.typeParameters ? `&lt;${method.typeParameters.map((param) => renderType(param, references, options)).join(', ')}&gt;` : ''}(${method.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)}`).join(', ')})${method.type ? `: ${renderType(method.type, references, options)}` : ''}</code>
 </summary><br />
+
+${method.typeParameters && method.typeParameters.length ? `<strong>Type params</strong>
+
+<table>
+    <thead>
+        <th align="left">Name</th>
+        <th align="left">Type</th>
+    </thead>
+    <tbody>
+        <tr>${method.typeParameters.map((param) => `
+            <td>${nameToString(param)}</td>
+            <td><code>extends ${renderType(param.constraint, references, options)}</code></td>`)
+                .join('</tr>\n<tr>')}
+        </tr>
+    </tbody>
+</table>` : ''}
 
 ${method.parameters.length ? `<strong>Params</strong>
 
