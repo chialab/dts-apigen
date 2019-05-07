@@ -585,7 +585,7 @@ ${description.trim()}
 
 ${methodDeclarationList.map((method) => `<details>
 <summary>
-<code>(${method.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)})`).join(', ')})${method.type ? `: ${renderType(method.type, references, options)}` : ''}</code>
+<code>(${method.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)}`).join(', ')})${method.type ? `: ${renderType(method.type, references, options)}` : ''}</code>
 </summary><br />
 
 ${method.parameters.length ? `<strong>Params</strong>
