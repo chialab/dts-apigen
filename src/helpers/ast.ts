@@ -45,7 +45,7 @@ export function getJSDocDescription(node: Node & { jsDoc?: any[] }): string {
     if (!comment || !comment.comment) {
         return null;
     }
-    return comment.comment.replace(/[ ]*\*/g, '');
+    return comment.comment.replace(/^[ ]*\*/gm, '');
 }
 
 /**
