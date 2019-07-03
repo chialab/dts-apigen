@@ -130,7 +130,8 @@ function renderSamples(tags: JSDocTag[]) {
     return tags
         .map((tag) => tag.comment)
         .join('\n\n')
-        .replace(/</g, '&lt;');
+        .replace(/</g, '&lt;')
+        .replace(/＠/g, '@');
 }
 
 function renderSeeAlso(tags: JSDocSeeTag[], references, options) {
