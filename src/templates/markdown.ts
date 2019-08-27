@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode, JSDocTag, isEnumDeclaration, EnumDeclaration, createPrinter, EmitHint, isTypeOperatorNode, isConstructorDeclaration } from 'typescript';
+import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode, JSDocTag, isEnumDeclaration, EnumDeclaration, createPrinter, EmitHint, isTypeOperatorNode, isConstructorDeclaration, isCallSignatureDeclaration } from 'typescript';
 import { ensureFile } from '../helpers/fs';
 import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, getJSDocSeeLinks, isExported, JSDocSeeTag, getJSDocTagByName } from '../helpers/ast';
 import { TemplateOptions } from './index';
@@ -224,6 +224,13 @@ ${type.members.map((member) => `${renderType(member, references, options).replac
         return `${nameToString(type)}${typeParams}(${
             type.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)}`).join(', ')
         }): ${renderType(type.type, references, options)}`;
+    }
+    if (isCallSignatureDeclaration(type)) {
+        let typeParams = '';
+        if (type.typeParameters) {
+            typeParams += `&lt;${type.typeParameters.map((param) => renderType(param, references, options)).join(', ')}&gt;`;
+        }
+        return `${typeParams}(${type.parameters.map((param) => `${nameToString(param)}${param.questionToken ? '?' : ''}: ${renderType(param.type, references, options)}`).join(', ')}): ${renderType(type.type, references, options)}`;
     }
     if (isConstructSignatureDeclaration(type)) {
         return `constructor(${
