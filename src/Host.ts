@@ -14,31 +14,17 @@ export function createCompilerHost(options: CompilerOptions, setParentNodes?: bo
     host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) => {
         let source: SourceFile = originalGetSourceFile.call(host, fileName, languageVersion, onError, shouldCreateNewSourceFile);
         if (source && isSourceFile(source) && !source.isDeclarationFile) {
-            let isJavaScript = !!(source.flags & 65536);
             let content = source.text;
-            if (isJavaScript) {
-                try {
-                    let result = transformSync(content, {
-                        filename: fileName,
-                        plugins: [
-                            require('@cureapp/babel-plugin-flow-to-typescript'),
-                        ],
-                    });
-                    content = result.code;
-                } catch (error) {
-                    //
-                }
-            }
             try {
-                let result = transformSync(content, {
+                content = transformSync(content, {
                     filename: fileName,
                     plugins: [
+                        require('@cureapp/babel-plugin-flow-to-typescript'),
                         require('@babel/plugin-syntax-jsx'),
                         require('@babel/plugin-syntax-typescript'),
                         ...(require('./jsdoc-plugins/index').plugins),
                     ],
-                });
-                content = result.code;
+                }).code;
             } catch (error) {
                 console.error('Unable to run JSDoc transformers', error);
             }
