@@ -1,5 +1,5 @@
 import { resolve, dirname } from 'path';
-import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode, ModuleResolutionKind, createModuleResolutionCache, ResolvedProjectReference, SyntaxKind, isThisTypeNode, isImportSpecifier, isTypePredicateNode, isLiteralTypeNode, isQualifiedName, isEnumDeclaration, isEnumMember, isToken, isTypeQueryNode, isComputedPropertyName, isPropertyAccessExpression, isInferTypeNode, isConditionalTypeNode } from 'typescript';
+import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode, ModuleResolutionKind, createModuleResolutionCache, ResolvedProjectReference, SyntaxKind, isThisTypeNode, isImportSpecifier, isTypePredicateNode, isLiteralTypeNode, isQualifiedName, isEnumDeclaration, isEnumMember, isToken, isTypeQueryNode, isComputedPropertyName, isPropertyAccessExpression, isInferTypeNode, isConditionalTypeNode, isGetAccessorDeclaration, isSetAccessor, isImportClause } from 'typescript';
 import { createProgram } from './Program';
 
 export type ReferencesMap = Map<Symbol, Identifier[]>;
@@ -20,7 +20,9 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
         isConstructSignatureDeclaration(node) ||
         isMethodSignature(node) ||
         isMethodDeclaration(node) ||
-        isCallSignatureDeclaration(node)) {
+        isCallSignatureDeclaration(node) ||
+        isGetAccessorDeclaration(node) ||
+        isSetAccessor(node)) {
         if (node.typeParameters) {
             node.typeParameters.forEach((typeParam) => {
                 collectNodeReferences(typechecker, symbols, references, typeParam);
@@ -180,6 +182,11 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
     } else if (isTypeQueryNode(node)) {
         if (node.exprName) {
             collectNodeReferences(typechecker, symbols, references, node.exprName);
+        }
+    } else if (isImportClause(node)) {
+        let symbol = typechecker.getSymbolAtLocation(node.name);
+        if (symbol) {
+            collectSymbol(typechecker, symbols, references, symbol);
         }
     } else if (isImportTypeNode(node)) {
         let symbol = typechecker.getSymbolAtLocation(node);
