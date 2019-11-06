@@ -37,7 +37,7 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
         config,
         {
             declaration: true,
-            emitDeclarationOnly: false,
+            emitDeclarationOnly: true,
             allowJs: true,
             allowNonTsExtensions: true,
             listEmittedFiles: true,
