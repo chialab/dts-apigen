@@ -19,7 +19,7 @@ export function getOriginalNode(node: Node & { original?: Node }): Node {
  * @return The JSDoc tags list
  */
 export function getJSDocTagsByName(node: Node, name: string): ReadonlyArray<JSDocTag> {
-    let tags = getJSDocTags(getOriginalNode(node)) || [];
+    const tags = getJSDocTags(getOriginalNode(node)) || [];
     return tags.filter((tag) => tag.tagName.escapedText === name);
 }
 
@@ -30,7 +30,7 @@ export function getJSDocTagsByName(node: Node, name: string): ReadonlyArray<JSDo
  * @return The JSDoc tag reference
  */
 export function getJSDocTagByName(node: Node, name: string): JSDocTag {
-    let tags = getJSDocTags(node) || [];
+    const tags = getJSDocTags(node) || [];
     return tags.find((tag) => tag.tagName.escapedText === name);
 }
 
@@ -40,8 +40,8 @@ export function getJSDocTagByName(node: Node, name: string): JSDocTag {
  * @return The description of the node
  */
 export function getJSDocDescription(node: Node & { jsDoc?: any[] }): string {
-    let comments = node.jsDoc || [];
-    let comment = comments[comments.length - 1];
+    const comments = node.jsDoc || [];
+    const comment = comments[comments.length - 1];
     if (!comment || !comment.comment) {
         return null;
     }
@@ -54,11 +54,11 @@ export function getJSDocDescription(node: Node & { jsDoc?: any[] }): string {
  * @return A list of examples for the node
  */
 export function getJSDocExamples(node: Node & { jsDoc?: any[] }): JSDocTag[] {
-    let tags = getJSDocTagsByName(node, 'example') || [];
+    const tags = getJSDocTagsByName(node, 'example') || [];
     return tags.map((tag) => {
-        let res = Object.assign({}, tag);
-        res.comment = res.comment.replace(/[ ]*\*/g, '');
-        return res;
+        const result = Object.assign({}, tag);
+        result.comment = result.comment.replace(/[ ]*\*/g, '');
+        return result;
     });
 }
 
@@ -77,25 +77,24 @@ export type JSDocSeeTag = JSDocTag & {
  * @return A list of see links for the node
  */
 export function getJSDocSeeLinks(node: Node & { jsDoc?: any[] }): JSDocSeeTag[] {
-    let tags = getJSDocTagsByName(node, 'see') || [];
-    let sourceFile = node.getSourceFile();
+    const tags = getJSDocTagsByName(node, 'see') || [];
     return tags.map((tag) => {
-        let res = Object.assign({
+        const result = Object.assign({
             interpolated: [],
         }, tag);
-        let chunks = tag.comment.split(/((?:\[[^]]*\])?{@link [^\s}|]*(?:[|\s][^}]*)?})/ig);
+        const chunks = tag.comment.split(/((?:\[[^]]*\])?{@link [^\s}|]*(?:[|\s][^}]*)?})/ig);
         chunks.forEach((chunk, index) => {
             if (index % 2 === 0) {
-                res.interpolated.push(chunk);
+                result.interpolated.push(chunk);
             } else {
-                let match = chunk.match(/(?:\[([^]]*)\])?{@link ([^\s}|]*)(?:[|\s]([^}]*))?}/i);
-                res.interpolated.push({
+                const match = chunk.match(/(?:\[([^]]*)\])?{@link ([^\s}|]*)(?:[|\s]([^}]*))?}/i);
+                result.interpolated.push({
                     text: match[1] || match[3] || match[2],
                     reference: match[2],
                 });
             }
         });
-        return res;
+        return result;
     });
 }
 
@@ -106,8 +105,8 @@ export function getJSDocSeeLinks(node: Node & { jsDoc?: any[] }): JSDocSeeTag[] 
  * @return The description of the parameter
  */
 export function getJSDocParamDescription(node: FunctionDeclaration|MethodDeclaration, paramName: string): string {
-    let tags = getJSDocTags(getOriginalNode(node)) || [];
-    let tag = tags.find((tag) => isJSDocParameterTag(tag) && tag.name.getText() === paramName);
+    const tags = getJSDocTags(getOriginalNode(node)) || [];
+    const tag = tags.find((tag) => isJSDocParameterTag(tag) && tag.name.getText() === paramName);
     if (!tag) {
         return null;
     }
@@ -120,8 +119,8 @@ export function getJSDocParamDescription(node: FunctionDeclaration|MethodDeclara
  * @return The description of the return statement
  */
 export function getJSDocReturnDescription(node: FunctionDeclaration|MethodDeclaration): string {
-    let tags = getJSDocTags(getOriginalNode(node)) || [];
-    let tag = tags.find((tag) => tag.kind === SyntaxKind.JSDocReturnTag);
+    const tags = getJSDocTags(getOriginalNode(node)) || [];
+    const tag = tags.find((tag) => tag.kind === SyntaxKind.JSDocReturnTag);
     if (!tag) {
         return null;
     }
@@ -146,7 +145,7 @@ export function hasModifier(node: Node, kind: number) {
  * @param kind THe kind of the modifier to add
  */
 export function addModifier(node: Node, kind: number, before = false) {
-    let modifier = createModifier(kind);
+    const modifier = createModifier(kind);
     modifier.parent = node;
     if (!node.modifiers) {
         (node.modifiers as any) = createModifiersFromModifierFlags(0);
@@ -170,8 +169,8 @@ export function removeModifier(node: Node, kind: number) {
     if (!node.modifiers) {
         return;
     }
-    let list: Modifier[] = (node.modifiers as any);
-    let modifier = list.find((modifier) => modifier.kind === kind);
+    const list: Modifier[] = (node.modifiers as any);
+    const modifier = list.find((modifier) => modifier.kind === kind);
     if (!modifier) {
         return;
     }
@@ -379,14 +378,14 @@ export function parseType(text: string): any {
 }
 
 export function parseTypeExpression(text: string): any {
-    let code = `let A = undefined as ${text};`;
-    let file = parseSync(code, {
+    const code = `let A = undefined as ${text};`;
+    const file = parseSync(code, {
         plugins: [
             require('@babel/plugin-syntax-typescript'),
         ],
     });
-    let decl = (file.program.body[0] as VariableDeclaration).declarations[0];
-    return JSON.parse(JSON.stringify((decl.init as any).typeAnnotation), (key, value) => {
+    const declaration = (file.program.body[0] as VariableDeclaration).declarations[0];
+    return JSON.parse(JSON.stringify((declaration.init as any).typeAnnotation), (key, value) => {
         if (key === 'loc' || key === 'start' || key === 'end') {
             return undefined;
         }
@@ -395,28 +394,29 @@ export function parseTypeExpression(text: string): any {
 }
 
 export function convertType(type: TypeNode): any {
-    let ast = createVariableStatement([], createVariableDeclarationList([
+    const ast = createVariableStatement([], createVariableDeclarationList([
         createVariableDeclaration('A', type)
     ]));
-    let decl = typescriptToBabel(ast);
-    return decl.declarations[0].id.typeAnnotation;
+    const declaration = typescriptToBabel(ast);
+    return declaration.declarations[0].id.typeAnnotation;
 }
 
 export function babelToTypescript(ast): Node {
-    let { code } = transformFromAstSync(program([ast], [], 'script'));
-    let source = createSourceFile('', code, ScriptTarget.ESNext);
+    const { code } = transformFromAstSync(program([ast], [], 'script'));
+    const source = createSourceFile('', code, ScriptTarget.ESNext);
     return source.statements[0];
 }
 
 export function typescriptToBabel(ast: Node): any {
-    let code = createPrinter().printNode(EmitHint.Unspecified, ast, undefined);
-    let file = parseSync(code, {
+    const code = createPrinter().printNode(EmitHint.Unspecified, ast, undefined);
+    const file = parseSync(code, {
         plugins: [
             require('@babel/plugin-syntax-typescript'),
         ],
     });
+    const removeKeys = ['loc', 'start', 'end', 'trailingComments'];
     return JSON.parse(JSON.stringify(file.program.body[0]), (key, value) => {
-        if (key === 'loc' || key === 'start' || key === 'end') {
+        if (removeKeys.indexOf(key) !== -1) {
             return undefined;
         }
         return value;
