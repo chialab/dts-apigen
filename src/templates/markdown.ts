@@ -296,6 +296,7 @@ ${type.members.map((member) => `${renderType(member, references, options).replac
             return 'string';
         case SyntaxKind.JSDocAllType:
         case SyntaxKind.AnyKeyword:
+        case SyntaxKind.UnknownKeyword:
             return 'any';
         case SyntaxKind.VoidKeyword:
             return 'void';
