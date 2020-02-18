@@ -478,6 +478,10 @@ function generateClass(clazz: ClassDeclaration, references, options) {
         .filter((member) => isPropertyDeclaration(member))
         .map((member) => member as PropertyDeclaration)
         .forEach((member) => {
+            if (member.modifiers && member.modifiers.some((mod) => mod.kind === SyntaxKind.PrivateKeyword)) {
+                // skip private members
+                return;
+            }
             if (member.modifiers && member.modifiers.some((mod) => mod.kind === SyntaxKind.StaticKeyword)) {
                 staticProperties.push(member);
             } else {
@@ -494,6 +498,10 @@ function generateClass(clazz: ClassDeclaration, references, options) {
         .filter((member) => isMethodDeclaration(member) || isConstructorDeclaration(member))
         .map((member) => member as MethodDeclaration)
         .forEach((member) => {
+            if (member.modifiers && member.modifiers.some((mod) => mod.kind === SyntaxKind.PrivateKeyword)) {
+                // skip private members
+                return;
+            }
             let name = isConstructorDeclaration(member) ? 'constructor' : nameToString(member);
             if (member.modifiers && member.modifiers.some((mod) => mod.kind === SyntaxKind.StaticKeyword)) {
                 staticMethods[name] = staticMethods[name] || [];
