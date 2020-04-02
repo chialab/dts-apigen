@@ -145,6 +145,9 @@ export function hasModifier(node: Node, kind: number) {
  * @param kind THe kind of the modifier to add
  */
 export function addModifier(node: Node, kind: number, before = false) {
+    if (hasModifier(node, kind)) {
+        removeModifier(node, kind);
+    }
     const modifier = createModifier(kind);
     modifier.parent = node;
     if (!node.modifiers) {

@@ -1,4 +1,4 @@
-import { isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createModifier, NodeFlags, isSourceFile, createSourceFile, ScriptTarget, ScriptKind, Statement, createPrinter, createModuleDeclaration, createModuleBlock, isImportTypeNode, createTypeReferenceNode, ImportTypeNode, createImportDeclaration, createImportClause, createNamedImports, createStringLiteral, isImportDeclaration, isImportSpecifier, ImportDeclaration, createImportSpecifier } from 'typescript';
+import { isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createModifier, NodeFlags, isSourceFile, createSourceFile, ScriptTarget, ScriptKind, Statement, createPrinter, createModuleDeclaration, createModuleBlock, isImportTypeNode, createTypeReferenceNode, createImportDeclaration, createImportClause, createNamedImports, isImportDeclaration, isImportSpecifier, ImportDeclaration, createImportSpecifier, createStringLiteral, createExportDeclaration, createNamedExports, createExportSpecifier, isExportDeclaration, ImportSpecifier, ExportSpecifier } from 'typescript';
 import { ReferencesMap, collect } from './collect';
 import { removeModifier, addModifier, hasModifier, traverse } from './helpers/ast';
 
@@ -30,6 +30,36 @@ function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: Map<
     }
 }
 
+function markExport(node: Node) {
+    if (isExportDeclaration(node)) {
+        return;
+    }
+    addModifier(node, SyntaxKind.ExportKeyword, true);
+}
+
+function sortStatements(node1: Statement, node2: Statement) {
+    let isImport1 = isImportDeclaration(node1);
+    let isImport2 = isImportDeclaration(node2);
+    if (isImport1 && isImport2) {
+        let source1 = ((node1 as ImportDeclaration).moduleSpecifier as any).text;
+        let source2 = ((node2 as ImportDeclaration).moduleSpecifier as any).text;
+        if (source1 < source2) {
+            return -1;
+        }
+        if (source1 > source2) {
+            return 1;
+        }
+        return 0;
+    }
+    if (isImport1) {
+        return -1;
+    }
+    if (isImport2) {
+        return 1;
+    }
+    return 0;
+}
+
 /**
  * Create a bundled definition file for a module.
  * @param fileName The module entry file.
@@ -47,15 +77,37 @@ function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: Map<
  * @see {@link collect} It uses the `collect` method to collect all required symbols.
  */
 export function bundle(fileName: string) {
-    const { typechecker, symbols, references, exported } = collect(fileName);
+    const { typechecker, symbols, references, exported, external, files } = collect(fileName);
     const collected: Map<string, Symbol> = new Map();
     const imported: Map<Symbol, string> = new Map();
+    const importSpecifiers: { [key: string]: ImportSpecifier[] } = {};
+    const exportSpecifiers: ExportSpecifier[] = [];
     const nodes: Array<[Node, Symbol]> = symbols
         .reduce((list: Array<[Node, Symbol]>, symbol) => {
             const sourceFile = symbol.getDeclarations()[0].getSourceFile();
-            if (sourceFile.fileName.includes('node_modules')) {
+            if (!(sourceFile.fileName in files)) {
+                const moduleSpecifier = external[sourceFile.fileName];
+                if (!moduleSpecifier) {
+                    // typings module
+                    return list;
+                }
+
+                // dependency
+                const name = createUniqueName(symbol, collected, symbol.getName());
+                imported.set(symbol, name);
+                renameSymbol(symbol, references, collected, name);
+                importSpecifiers[moduleSpecifier.name] = importSpecifiers[moduleSpecifier.name] || [];
+                const node = createImportSpecifier(symbol.getName() !== name ? createIdentifier(symbol.getName()) : undefined, createIdentifier(name));
+                const exportAs = name === symbol.getName() ? undefined : symbol.getName();
+                if (exported.indexOf(symbol) !== -1) {
+                    exportSpecifiers.push(
+                        createExportSpecifier(exportAs && name, exportAs || name)
+                    );
+                }
+                importSpecifiers[moduleSpecifier.name].push(node);
                 return list;
             }
+
             symbol.getDeclarations()
                 .forEach((declaration) => {
                     let node: Node = declaration;
@@ -83,12 +135,23 @@ export function bundle(fileName: string) {
                 });
             return list;
         }, []);
+    
+    for (let moduleName in importSpecifiers) {
+        const node = createImportDeclaration([], [], createImportClause(undefined, createNamedImports(importSpecifiers[moduleName])), createStringLiteral(moduleName));
+        nodes.push([node, undefined]);
+    }
+
+    if (exportSpecifiers.length) {
+        nodes.unshift([
+            createExportDeclaration([], [], createNamedExports(exportSpecifiers)),
+            undefined,
+        ]);
+    }
+
     exported.forEach((sym) => {
         let refs = nodes.filter(([node, symbol]) => symbol === sym);
         if (refs.length) {
-            refs.forEach(([node]) => {
-                addModifier(node, SyntaxKind.ExportKeyword, true);
-            });
+            refs.forEach(([node, symbol]) => markExport(node));
             collected.set(sym.getName(), sym);
             return;
         }
@@ -132,10 +195,9 @@ export function bundle(fileName: string) {
             nodes.push([node, undefined]);
             return;
         }
-        refs = nodes.filter(([node, symbol]) => symbol === alias);
-        refs.forEach(([node]) => {
-            addModifier(node, SyntaxKind.ExportKeyword, true);
-        });
+        nodes
+            .filter(([node, symbol]) => symbol === alias)
+            .forEach(([node]) => markExport(node));
         let name = createUniqueName(sym, collected);
         renameSymbol(alias, references, collected,name);
         collected.set(sym.getName(), alias);
@@ -178,29 +240,9 @@ export function bundle(fileName: string) {
             });
             return node as Statement;
         })
-        .sort((node1: Statement, node2: Statement) => {
-            let isImport1 = isImportDeclaration(node1);
-            let isImport2 = isImportDeclaration(node2);
-            if (isImport1 && isImport2) {
-                let source1 = (node1 as ImportDeclaration).moduleSpecifier.getText();
-                let source2 = (node2 as ImportDeclaration).moduleSpecifier.getText();
-                if (source1 < source2) {
-                    return -1;
-                }
-                if (source1 > source2) {
-                    return 1;
-                }
-                return 0;
-            }
-            if (isImport1) {
-                return -1;
-            }
-            if (isImport2) {
-                return 1;
-            }
-            return 0;
-        })
+        .sort(sortStatements)
         .map((node) => printer.printNode(4, node, node.getSourceFile()))
         .join('\n');
+
     return createSourceFile('bundle.d.ts', code, ScriptTarget.ESNext, true, ScriptKind.TS);
 }

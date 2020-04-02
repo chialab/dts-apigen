@@ -26,6 +26,8 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
         let parsed = getParsedCommandLineOfConfigFile(configFile, options, host);
         config = parsed.options;
     }
+    delete config.baseUrl;
+    delete config.paths;
 
     // setup compiler options
     const compilerOptions: CompilerOptions = Object.assign(
