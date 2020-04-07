@@ -163,7 +163,11 @@ export function bundle(fileName: string) {
         if (!alias) {
             return;
         }
-        let aliasDeclaration = alias.getDeclarations()[0];
+        let declarations = alias.getDeclarations();
+        if (!declarations) {
+            return;
+        }
+        let aliasDeclaration = declarations[0];
         if (isSourceFile(aliasDeclaration)) {
             let aliasExportSymbols = typechecker.getExportsOfModule(alias);
             let indexes = [];

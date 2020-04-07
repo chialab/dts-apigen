@@ -1,11 +1,13 @@
-import { resolve, dirname } from 'path';
-import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode, ModuleResolutionKind, createModuleResolutionCache, ResolvedProjectReference, SyntaxKind, isThisTypeNode, isImportSpecifier, isTypePredicateNode, isLiteralTypeNode, isQualifiedName, isEnumDeclaration, isEnumMember, isToken, isTypeQueryNode, isComputedPropertyName, isPropertyAccessExpression, isInferTypeNode, isConditionalTypeNode, isGetAccessorDeclaration, isSetAccessor, isImportClause, isNamespaceImport, WriteFileCallback } from 'typescript';
-import { createProgram } from './Program';
+import { dirname } from 'path';
+import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode, ModuleResolutionKind, createModuleResolutionCache, ResolvedProjectReference, SyntaxKind, isThisTypeNode, isImportSpecifier, isTypePredicateNode, isLiteralTypeNode, isQualifiedName, isEnumDeclaration, isEnumMember, isToken, isTypeQueryNode, isComputedPropertyName, isPropertyAccessExpression, isInferTypeNode, isConditionalTypeNode, isGetAccessorDeclaration, isSetAccessor, isImportClause, isNamespaceImport, WriteFileCallback, PackageId } from 'typescript';
+import { loadConfig, createProgram } from './Program';
 import { hasModifier } from './helpers/ast';
 
 export type ReferencesMap = Map<Symbol, Identifier[]>;
 
 export type Sources = { [key: string]: string };
+
+export type ExternalModule = { [key: string]: PackageId };
 
 export function addReference(references: ReferencesMap, symbol: Symbol, type: Identifier) {
     let list = references.get(symbol) || [];
@@ -19,11 +21,11 @@ function getExports(typechecker: TypeChecker, symbol: Symbol) {
     return typechecker.getExportsOfModule(symbol)
         .filter((symbol) => {
             let declaration: Node = symbol.getDeclarations()[0];
-            if (isVariableDeclaration(declaration)) {
-                declaration = declaration.parent.parent;
-            }
             if (isExportSpecifier(declaration)) {
                 return true;
+            }
+            if (isVariableDeclaration(declaration)) {
+                declaration = declaration.parent.parent;
             }
             return hasModifier(declaration, SyntaxKind.ExportKeyword);
         });
@@ -278,8 +280,9 @@ function collectSymbol(typechecker: TypeChecker, symbols: Symbol[], references: 
 
 function createCompilerHost(options: CompilerOptions) {
     const host = tsCreateCompilerHost(options);
+    const cache = createModuleResolutionCache(host.getCurrentDirectory(), (x) => host.getCanonicalFileName(x));
     const files: Sources = {};
-    const external = {};
+    const external: ExternalModule = {};
 
     // override getSourceFile
     const originalGetSourceFile = host.getSourceFile;
@@ -290,23 +293,30 @@ function createCompilerHost(options: CompilerOptions) {
         return originalGetSourceFile.call(host, fileName, languageVersion, onError, shouldCreateNewSourceFile);
     };
 
-    let cache;
     host.resolveModuleNames = (moduleNames: string[], containingFile: string, reusedNames: string[], redirectedReference: ResolvedProjectReference) => {
-        cache = cache || createModuleResolutionCache(host.getCurrentDirectory(), (x) => host.getCanonicalFileName(x));
         const resolvedModules: ResolvedModule[] = [];
         for (const moduleName of moduleNames) {
-            const virtualFile = `${resolve(dirname(containingFile), moduleName)}.d.ts`;
+            const resolved = resolveModuleName(moduleName, containingFile, options, host, cache, redirectedReference).resolvedModule;
+            if (!resolved) {
+                resolvedModules.push(undefined);
+                continue;
+            }
+            const virtualFile = resolved.resolvedFileName.replace(new RegExp(`${resolved.extension}$`), '.d.ts');
             if (virtualFile in files) {
                 resolvedModules.push({
                     resolvedFileName: virtualFile,
                 });
             } else {
-                // try to use standard resolution
-                const resolved = resolveModuleName(moduleName, containingFile, options, host, cache, redirectedReference).resolvedModule;
-                if (resolved) {
-                    external[resolved.resolvedFileName] = resolved.packageId;
-                }
                 resolvedModules.push(resolved);
+            }
+            if (resolved.packageId) {
+                external[resolved.resolvedFileName] = resolved.packageId;
+            } else if (moduleName[0] !== '.' && dirname(containingFile) !== dirname(resolved.resolvedFileName)) {
+                external[resolved.resolvedFileName] = {
+                    name: moduleName,
+                    subModuleName: '',
+                    version: '',
+                };
             }
         }
         return resolvedModules;
@@ -335,11 +345,11 @@ function createCompilerHost(options: CompilerOptions) {
  * ```
  */
 export function collect(fileName: string) {
-    const compilerOptions: CompilerOptions = {
+    const compilerOptions: CompilerOptions = loadConfig(fileName, {
         target: ScriptTarget.ESNext,
         moduleResolution: ModuleResolutionKind.NodeJs,
         declaration: true,
-    };
+    });
     const { host, collector, files: filesMap, external } = createCompilerHost(compilerOptions);
     createProgram([fileName], compilerOptions).emit(undefined, collector);
     const files = Object.keys(filesMap);

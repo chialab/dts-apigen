@@ -3,18 +3,8 @@ import { resolve } from 'path';
 import { createProgram as tsCreateProgram, CompilerOptions, CompilerHost, Program, Diagnostic, SourceFile, WriteFileCallback, CancellationToken, CustomTransformers, flattenDiagnosticMessageText, ScriptTarget, getPreEmitDiagnostics, ModuleResolutionKind, getParsedCommandLineOfConfigFile, findConfigFile, sys } from 'typescript';
 import { createCompilerHost } from './Host';
 
-/**
- * Create a TypeScript program with custom transformers and custom resolution for JS files
- * @param fileNames A list of sources to transform
- * @param options The TypeScript compiler options
- * @return A TypeScript program
- */
-export function createProgram(fileNames: ReadonlyArray<string>, options: CompilerOptions, host?: CompilerHost, oldProgram?: Program, configFileParsingDiagnostics?: ReadonlyArray<Diagnostic>): Program {
-    // normalize files names
-    fileNames = fileNames.map((fileName) => resolve(process.cwd(), fileName));
-
-    // load tsconfig.json
-    const configFile = findConfigFile(fileNames[0], existsSync);
+export function loadConfig(sourceFile: string, options: CompilerOptions): CompilerOptions {
+    const configFile = findConfigFile(sourceFile, existsSync);
     let config = options;
     if (configFile) {
         let host = Object.assign(
@@ -26,11 +16,9 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
         let parsed = getParsedCommandLineOfConfigFile(configFile, options, host);
         config = parsed.options;
     }
-    delete config.baseUrl;
-    delete config.paths;
 
     // setup compiler options
-    const compilerOptions: CompilerOptions = Object.assign(
+    return Object.assign(
         {
             target: ScriptTarget.ESNext,
             moduleResolution: ModuleResolutionKind.NodeJs,
@@ -46,7 +34,20 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
             noEmitOnError: true,
         }
     );
+}
 
+/**
+ * Create a TypeScript program with custom transformers and custom resolution for JS files
+ * @param fileNames A list of sources to transform
+ * @param options The TypeScript compiler options
+ * @return A TypeScript program
+ */
+export function createProgram(fileNames: ReadonlyArray<string>, options: CompilerOptions, host?: CompilerHost, oldProgram?: Program, configFileParsingDiagnostics?: ReadonlyArray<Diagnostic>): Program {
+    // normalize files names
+    fileNames = fileNames.map((fileName) => resolve(process.cwd(), fileName));
+
+    // load tsconfig.json
+    const compilerOptions = loadConfig(fileNames[0], options);
     // generate the custom compiler host to correctly load JS files.
     const compilerHost = createCompilerHost(compilerOptions, true, host);
     // create the TypeScript program
