@@ -1,64 +1,6 @@
-import { isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createModifier, NodeFlags, isSourceFile, createSourceFile, ScriptTarget, ScriptKind, Statement, createPrinter, createModuleDeclaration, createModuleBlock, isImportTypeNode, createTypeReferenceNode, createImportDeclaration, createImportClause, createNamedImports, isImportDeclaration, isImportSpecifier, ImportDeclaration, createImportSpecifier, createStringLiteral, createExportDeclaration, createNamedExports, createExportSpecifier, isExportDeclaration, ImportSpecifier, ExportSpecifier } from 'typescript';
-import { ReferencesMap, collect } from './collect';
-import { removeModifier, addModifier, hasModifier, traverse } from './helpers/ast';
-
-function createUniqueName(symbol: Symbol, collected: Map<string, Symbol>, suggested?: string) {
-    let baseName = suggested || (symbol.getDeclarations()[0] as any).name.escapedText;
-    while (collected.has(baseName) && collected.get(baseName) !== symbol) {
-        let matchAlias = baseName.match(/_(\d+)$/);
-        if (matchAlias) {
-            baseName = baseName.replace(/_(\d+)$/, `_${parseInt(matchAlias[1]) + 1}`);
-        } else {
-            baseName += '_1';
-        }
-    }
-    return baseName;
-}
-
-function renameSymbol(symbol: Symbol, references: ReferencesMap, collected: Map<string, Symbol>, name: string) {
-    if (name !== symbol.getName()) {
-        collected.set(name, symbol);
-        (symbol as any)._escapedName = symbol.getName();
-        (symbol.escapedName as string) = name;
-        symbol.getDeclarations().forEach((declaration) => {
-            (declaration as any).name = createIdentifier(name);
-        });
-        let refs = references.get(symbol) || [];
-        refs.forEach((ref) => {
-            (ref as any).escapedText = name;
-        });
-    }
-}
-
-function markExport(node: Node) {
-    if (isExportDeclaration(node)) {
-        return;
-    }
-    addModifier(node, SyntaxKind.ExportKeyword, true);
-}
-
-function sortStatements(node1: Statement, node2: Statement) {
-    let isImport1 = isImportDeclaration(node1);
-    let isImport2 = isImportDeclaration(node2);
-    if (isImport1 && isImport2) {
-        let source1 = ((node1 as ImportDeclaration).moduleSpecifier as any).text;
-        let source2 = ((node2 as ImportDeclaration).moduleSpecifier as any).text;
-        if (source1 < source2) {
-            return -1;
-        }
-        if (source1 > source2) {
-            return 1;
-        }
-        return 0;
-    }
-    if (isImport1) {
-        return -1;
-    }
-    if (isImport2) {
-        return 1;
-    }
-    return 0;
-}
+import { isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createModifier, NodeFlags, isSourceFile, createSourceFile, ScriptTarget, ScriptKind, Statement, createPrinter, createModuleDeclaration, createModuleBlock, isImportTypeNode, createTypeReferenceNode, createImportDeclaration, createImportClause, createNamedImports, isImportDeclaration, isImportSpecifier, ImportDeclaration, createImportSpecifier, createStringLiteral, createExportDeclaration, createNamedExports, createExportSpecifier, ExportSpecifier, isTypeParameterDeclaration, TypeChecker, isModuleBlock } from 'typescript';
+import { collect } from './collect';
+import { removeModifier, traverse, addModifier, getAliasedSymbol } from './helpers/ast';
 
 /**
  * Create a bundled definition file for a module.
@@ -79,172 +21,303 @@ function sortStatements(node1: Statement, node2: Statement) {
 export function bundle(fileName: string) {
     const { typechecker, symbols, references, exported, external, files } = collect(fileName);
     const collected: Map<string, Symbol> = new Map();
-    const imported: Map<Symbol, string> = new Map();
-    const importSpecifiers: { [key: string]: ImportSpecifier[] } = {};
-    const exportSpecifiers: ExportSpecifier[] = [];
-    const nodes: Array<[Node, Symbol]> = symbols
-        .reduce((list: Array<[Node, Symbol]>, symbol) => {
-            const sourceFile = symbol.getDeclarations()[0].getSourceFile();
-            if (!(sourceFile.fileName in files)) {
-                const moduleSpecifier = external[sourceFile.fileName];
-                if (!moduleSpecifier) {
-                    // typings module
-                    return list;
-                }
-
-                // dependency
-                const name = createUniqueName(symbol, collected, symbol.getName());
-                imported.set(symbol, name);
-                renameSymbol(symbol, references, collected, name);
-                importSpecifiers[moduleSpecifier.name] = importSpecifiers[moduleSpecifier.name] || [];
-                const node = createImportSpecifier(symbol.getName() !== name ? createIdentifier(symbol.getName()) : undefined, createIdentifier(name));
-                const exportAs = name === symbol.getName() ? undefined : symbol.getName();
-                if (exported.indexOf(symbol) !== -1) {
-                    exportSpecifiers.push(
-                        createExportSpecifier(exportAs && name, exportAs || name)
-                    );
-                }
-                importSpecifiers[moduleSpecifier.name].push(node);
-                return list;
-            }
-
-            symbol.getDeclarations()
-                .forEach((declaration) => {
-                    let node: Node = declaration;
-                    if (isVariableDeclaration(declaration)) {
-                        node = declaration.parent.parent;
-                    } else if (isImportSpecifier(node)) {
-                        const alias = typechecker.getAliasedSymbol(symbol);
-                        if (imported.has(alias)) {
-                            renameSymbol(symbol, references, collected, imported.get(alias));
-                            return;
-                        }
-                        const name = createUniqueName(alias, collected, alias.getName());
-                        imported.set(alias, name);
-                        renameSymbol(symbol, references, collected, name);
-                        let importDecl = node.parent.parent.parent;
-                        node = createImportDeclaration([], [], createImportClause(undefined, createNamedImports([
-                            createImportSpecifier(alias.getName() !== name ? createIdentifier(alias.getName()) : undefined, createIdentifier(name))
-                        ])), importDecl.moduleSpecifier);
-                        node.parent = importDecl.parent;
-                        symbol = alias;
-                    }
-                    removeModifier(node, SyntaxKind.DefaultKeyword);
-                    removeModifier(node, SyntaxKind.ExportKeyword);
-                    list.push([node, symbol]);
-                });
-            return list;
-        }, []);
-    
-    for (let moduleName in importSpecifiers) {
-        const node = createImportDeclaration([], [], createImportClause(undefined, createNamedImports(importSpecifiers[moduleName])), createStringLiteral(moduleName));
-        nodes.push([node, undefined]);
-    }
-
-    if (exportSpecifiers.length) {
-        nodes.unshift([
-            createExportDeclaration([], [], createNamedExports(exportSpecifiers)),
-            undefined,
-        ]);
-    }
-
-    exported.forEach((sym) => {
-        let refs = nodes.filter(([node, symbol]) => symbol === sym);
-        if (refs.length) {
-            refs.forEach(([node, symbol]) => markExport(node));
-            collected.set(sym.getName(), sym);
-            return;
-        }
-        let declaration = sym.getDeclarations()[0];
-        if (!isExportSpecifier(declaration)) {
-            return;
-        }
-        let alias = typechecker.getAliasedSymbol(sym);
-        if (!alias) {
-            return;
-        }
-        let declarations = alias.getDeclarations();
-        if (!declarations) {
-            return;
-        }
-        let aliasDeclaration = declarations[0];
-        if (isSourceFile(aliasDeclaration)) {
-            let aliasExportSymbols = typechecker.getExportsOfModule(alias);
-            let indexes = [];
-            let aliasExportNodes = aliasExportSymbols.reduce((list, exportSymbol) => {
-                list.push(...nodes
-                    .filter(([node, symbol], index) => {
-                        if (symbol === exportSymbol) {
-                            indexes.push(index);
-                            return true;
-                        }
-                        return false;
-                    })
-                    .map(([ node ]) => node)
-                );
-                return list;
-            }, []);
-            let node = createModuleDeclaration([], [createModifier(SyntaxKind.ExportKeyword), createModifier(SyntaxKind.DeclareKeyword)], createIdentifier(sym.getName()), createModuleBlock(
-                aliasExportNodes.map((node) => {
-                    removeModifier(node, SyntaxKind.DeclareKeyword);
-                    addModifier(node, SyntaxKind.ExportKeyword, true);
-                    return node;
-                })
-            ), NodeFlags.Namespace);
-            node.parent = aliasDeclaration;
-            indexes.sort().forEach((index, i) => {
-                nodes.splice(index - i, 1);
-            });
-            collected.set(sym.getName(), undefined);
-            nodes.push([node, undefined]);
-            return;
-        }
-        nodes
-            .filter(([node, symbol]) => symbol === alias)
-            .forEach(([node]) => markExport(node));
-        let name = createUniqueName(sym, collected);
-        renameSymbol(alias, references, collected,name);
-        collected.set(sym.getName(), alias);
-    });
+    const externalImports: Map<string, ImportDeclaration> = new Map();
+    const externalImported: Map<string, Symbol[]> = new Map();
+    const imports: Node[] = [];
+    const exportClause = createNamedExports([]);
+    const exportDeclaration = createExportDeclaration([], [], exportClause);
+    const nodes: Node[] = [];
     const printer = createPrinter();
-    const code = nodes
-        .map(([node, symbol]) => {
-            if (symbol) {
-                let symbolName = symbol.getName();
-                if (symbolName === 'default') {
-                    let declaration = symbol.getDeclarations()[0];
-                    let name = createUniqueName(symbol, collected, (declaration as any).name ? (declaration as any).name.getText() : '__default');
-                    renameSymbol(symbol, references, collected, name);
-                } else if (collected.get(symbolName) !== symbol) {
-                    if (collected.has(symbolName)) {
-                        renameSymbol(symbol, references, collected, createUniqueName(symbol, collected));
-                    } else {
-                        collected.set(symbolName, symbol);
-                    }
+        
+    function createUniqueName(symbol: Symbol, suggested?: string) {
+        let originalName = symbol.getName();
+        let alias = getAliasedSymbol(typechecker, symbol) || symbol;
+        let baseName = suggested || originalName;
+        while (collected.has(baseName) && collected.get(baseName) !== alias) {
+            let matchAlias = baseName.match(/_(\d+)$/);
+            if (matchAlias) {
+                baseName = baseName.replace(/_(\d+)$/, `_${parseInt(matchAlias[1]) + 1}`);
+            } else {
+                baseName += '_1';
+            }
+        }
+        collected.set(baseName, alias);
+        if (originalName !== baseName) {
+            renameSymbol(alias, baseName);
+            renameSymbol(symbol, baseName);
+        }
+        return baseName;
+    }
+    
+    function renameSymbol(symbol: Symbol, name: string) {
+        let refs = references.get(symbol) || [];
+        let id = createIdentifier(name);
+        refs.forEach((ref) => {
+            for (let key in ref) {
+                delete ref[key];
+            }
+            Object.assign(ref, id);
+        });
+    }
+
+    function addExternalImport(symbol: Symbol, specifier: string, importedName: string, localName: string = importedName) {
+        const list = externalImported.get(specifier) || [];
+        const alias = getAliasedSymbol(typechecker, symbol) || symbol;
+        if (list.includes(alias)) {
+            return;
+        }
+        let importDeclaration = externalImports.get(specifier);
+        if (!importDeclaration) {
+            importDeclaration = createImportDeclaration([], [], createImportClause(undefined, createNamedImports([])), createStringLiteral(specifier));
+            externalImports.set(specifier, importDeclaration);
+            imports.push(importDeclaration);
+        }
+        if (localName !== importedName) {
+            (importDeclaration.importClause.namedBindings as any).elements.push(
+                createImportSpecifier(createIdentifier(importedName), createIdentifier(localName))
+            );
+        } else {
+            (importDeclaration.importClause.namedBindings as any).elements.push(
+                createImportSpecifier(undefined, createIdentifier(importedName))
+            );
+        }
+
+        list.push(alias);
+        externalImported.set(specifier, list);
+    }
+
+    function buildStatement(declaration: Node, shouldDeclare:boolean = true) {
+        if (isVariableDeclaration(declaration)) {
+            declaration = declaration.parent.parent;
+        }
+        if (isTypeParameterDeclaration(declaration)) {
+            // ignore
+            return;
+        }
+        if (isExportSpecifier(declaration)) {
+            return createExportDeclaration([], [], createNamedExports([declaration]));
+        }
+
+        removeModifier(declaration, SyntaxKind.DefaultKeyword);
+        removeModifier(declaration, SyntaxKind.DeclareKeyword);
+        if (shouldDeclare) {
+            removeModifier(declaration, SyntaxKind.ExportKeyword);
+            addModifier(declaration, SyntaxKind.DeclareKeyword);
+        }
+        traverse(declaration, (child) => {
+            if (isImportTypeNode(child)) {
+                let sourceSymbol = typechecker.getSymbolAtLocation(child);
+                if (!sourceSymbol) {
+                    return;
                 }
+                let typeSymbol = sourceSymbol.exports.get(child.qualifier.getText() as any);
+                if (!typeSymbol) {
+                    return;
+                }
+                const args = child.typeArguments;
+                for (let key in child) {
+                    delete child[key];
+                }
+                Object.assign(child, createTypeReferenceNode(typeSymbol.getName(), args));
             }
-            if (!hasModifier(node, SyntaxKind.DeclareKeyword) && !isImportDeclaration(node)) {
-                addModifier(node, SyntaxKind.DeclareKeyword);
+        });
+
+        return declaration;
+    }
+
+    const notTypeParamSymbols = symbols
+        .filter((symbol) => {
+            const declarations = symbol.getDeclarations() || [];
+            return !declarations.some((declaration) => isTypeParameterDeclaration(declaration));
+        });
+
+    const sourceModuleSymbols = notTypeParamSymbols
+        .filter((symbol) => {
+            const alias = getAliasedSymbol(typechecker, symbol) || symbol;
+            const declarations = alias.getDeclarations() || [];
+            return !declarations.some((declaration) => {
+                let sourceFile = declaration.getSourceFile();
+                return !(sourceFile.fileName in files);
+            });
+        });
+    
+    // external modules
+    const externalSymbols = notTypeParamSymbols
+        .filter((symbol) => {
+            const alias = getAliasedSymbol(typechecker, symbol) || symbol;
+            const declarations = alias.getDeclarations() || [];
+            return !declarations.some((declaration) => {
+                let sourceFile = declaration.getSourceFile();
+                return !(sourceFile.fileName in external);
+            });
+        })
+
+    externalSymbols.map((symbol) => {
+        const declarations = symbol.getDeclarations() || [];
+        return [
+            symbol,
+            declarations.filter((declaration) => {
+                let sourceFile = declaration.getSourceFile();
+                return !(sourceFile.fileName in files) && sourceFile.fileName in external;
+            }),
+        ] as [Symbol, Node[]];
+    }).forEach(([symbol, declarations]) => {
+        if (!declarations.length) {
+            return;
+        }
+
+        let name = createUniqueName(symbol);
+        declarations.forEach((declaration) => {
+            let sourceFile = declaration.getSourceFile();
+            let packageId = external[sourceFile.fileName];
+            let specifier = packageId.name;
+            if (packageId.subModuleName) {
+                specifier += `/${packageId.subModuleName.replace(/\.d\.ts$/, '')}`;
             }
-            traverse(node, (child) => {
-                if (isImportTypeNode(child)) {
-                    let sourceSymbol = typechecker.getSymbolAtLocation(child);
-                    if (!sourceSymbol) {
-                        return;
+            addExternalImport(symbol, specifier, symbol.getName(), name);
+        });
+    });
+
+    // internal modules
+    sourceModuleSymbols
+        .map((symbol) => {
+            const declarations = symbol.getDeclarations() || [];
+            return [
+                symbol,
+                declarations.filter((declaration) => isImportSpecifier(declaration) || isExportSpecifier(declaration)),
+            ] as [Symbol, Node[]];
+        })
+        .forEach(([symbol, declarations]) => {
+            if (!declarations.length) {
+                return;
+            }
+            let alias = getAliasedSymbol(typechecker, symbol) || symbol;
+            let name = createUniqueName(symbol);
+
+            declarations.forEach((declaration) => {
+                if (isImportSpecifier(declaration)) {
+                    let oldImportDeclaration = declaration.parent.parent.parent;
+                    let specifier = oldImportDeclaration.moduleSpecifier.getText().replace(/['"]/g, '');
+                    if (alias !== symbol) {
+                        addExternalImport(symbol, specifier, alias.getName(), name);
                     }
-                    let typeSymbol = sourceSymbol.exports.get(child.qualifier.getText() as any);
-                    if (!typeSymbol) {
-                        return;
+                } else if (isExportSpecifier(declaration)) {
+                    let oldExportDeclaration = declaration.parent.parent;
+                    if (oldExportDeclaration.moduleSpecifier) {
+                        let specifier = oldExportDeclaration.moduleSpecifier.getText().replace(/['"]/g, '');
+                        addExternalImport(symbol, specifier, symbol.getName(), name);
                     }
-                    for (let key in child) {
-                        delete child[key];
-                    }
-                    Object.assign(child, createTypeReferenceNode(typeSymbol.getName(), []));
+                    (exportClause.elements as unknown as ExportSpecifier[]).push(declaration);
+                    return;
                 }
             });
-            return node as Statement;
+        });
+
+    exported
+        .filter((symbol) => {
+            const alias = getAliasedSymbol(typechecker, symbol) || symbol;
+            const declarations = alias.getDeclarations() || [];
+            return !declarations.some((declaration) => {
+                let sourceFile = declaration.getSourceFile();
+                return !(sourceFile.fileName in external);
+            });
         })
-        .sort(sortStatements)
+        .map((symbol) => {
+            const declarations = symbol.getDeclarations() || [];
+            return [
+                symbol,
+                declarations.filter((declaration) => isExportSpecifier(declaration)),
+            ] as [Symbol, ExportSpecifier[]];
+        })
+        .forEach(([symbol, declarations]) => {
+            let name = createUniqueName(symbol);
+            declarations.forEach((declaration) => {
+                let exportDeclaration = declaration.parent.parent;
+                if (exportDeclaration.moduleSpecifier) {
+                    let specifier = exportDeclaration.moduleSpecifier.getText().replace(/['"]/g, '');
+                    addExternalImport(symbol, specifier, symbol.getName(), name);
+                }
+                let specifier: ExportSpecifier;
+                if (declaration.propertyName && !exportDeclaration.moduleSpecifier && !externalSymbols.includes(symbol)) {
+                    let alias = typechecker.getSymbolAtLocation(declaration.propertyName);
+                    let aliasName = createUniqueName(alias);
+                    specifier = createExportSpecifier(createIdentifier(aliasName), createIdentifier(symbol.getName()));
+                } else if (symbol.getName() !== name) {
+                    specifier = createExportSpecifier(createIdentifier(name), createIdentifier(symbol.getName()));
+                } else {
+                    specifier = createExportSpecifier(undefined, createIdentifier(name));
+                }
+                (exportClause.elements as unknown as ExportSpecifier[]).push(specifier);
+            });
+        });
+
+    exported
+        .filter((symbol) => {
+            const alias = getAliasedSymbol(typechecker, symbol) || symbol;
+            const declarations = alias.getDeclarations() || [];
+            return !declarations.some((declaration) => {
+                let sourceFile = declaration.getSourceFile();
+                return !(sourceFile.fileName in files);
+            });
+        })
+        .forEach((symbol) => {
+            const alias = getAliasedSymbol(typechecker, symbol) || symbol;
+            let name = createUniqueName(symbol);
+            const declarations = symbol.getDeclarations() || [];
+            declarations.forEach((declaration) => {
+                let specifier: ExportSpecifier;
+                if (isExportSpecifier(declaration)) {
+                    specifier = declaration;
+                    if (alias !== symbol) {
+                        const aliasDeclaration = alias.getDeclarations()[0];
+                        if (isSourceFile(aliasDeclaration)) {
+                            let statements = aliasDeclaration.statements
+                                .filter((node) => !isImportDeclaration(node));
+                            let node = createModuleDeclaration([], [
+                                createModifier(SyntaxKind.DeclareKeyword)],
+                                createIdentifier(name),
+                                createModuleBlock(statements.map((node) => buildStatement(node, false)) as Statement[]),
+                                NodeFlags.Namespace
+                            );
+                            nodes.push(node);
+                        } else if (alias.getName() !== name && alias.getName() !== 'default') {
+                            specifier = createExportSpecifier(createIdentifier(alias.getName()), createIdentifier(name));
+                        } else {
+                            specifier = createExportSpecifier(undefined, createIdentifier(name));
+                        }
+                    }
+                } else if (symbol.getName() !== name) {
+                    specifier = createExportSpecifier(createIdentifier(symbol.getName()), createIdentifier(name));
+                } else {
+                    specifier = createExportSpecifier(undefined, createIdentifier(name));
+                }
+                (exportClause.elements as unknown as ExportSpecifier[]).push(specifier);
+            });
+        });
+    
+    // statements
+    sourceModuleSymbols
+        .map((symbol) => {
+            const declarations = symbol.getDeclarations() || [];
+            return [
+                symbol,
+                declarations.filter((declaration) => !isImportSpecifier(declaration) && !isExportSpecifier(declaration)),
+            ] as [Symbol, Node[]];
+        })
+        .forEach(([symbol, declarations]) => {
+            if (!declarations.length) {
+                return;
+            }
+            createUniqueName(symbol);
+            declarations.forEach((declaration: Node) => {
+                nodes.push(buildStatement(declaration));
+            });
+        });
+
+    const exports = exportClause.elements.length ? [exportDeclaration] : []; 
+    const code = imports
+        .concat(nodes)
+        .concat(exports)
         .map((node) => printer.printNode(4, node, node.getSourceFile()))
         .join('\n');
 

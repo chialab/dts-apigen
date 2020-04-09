@@ -2,7 +2,7 @@ import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { SourceFile, SyntaxKind, ClassDeclaration, InterfaceDeclaration, TypeAliasDeclaration, FunctionDeclaration, VariableDeclaration, ModuleDeclaration, TypeNode, isClassDeclaration, isInterfaceDeclaration, isTypeAliasDeclaration, isFunctionDeclaration, isVariableStatement, isVariableDeclaration, isModuleDeclaration, isImportDeclaration, isExportDeclaration, isNamespaceExportDeclaration, isExportAssignment, isImportEqualsDeclaration, isTypeReferenceNode, isUnionTypeNode, isArrayTypeNode, isParenthesizedTypeNode, Node, isTypeLiteralNode, TypeElement, isIndexSignatureDeclaration, TypeParameterDeclaration, createNodeArray, isPropertySignature, isIntersectionTypeNode, isFunctionTypeNode, ParameterDeclaration, isMethodSignature, isConstructSignatureDeclaration, isTypeParameterDeclaration, isTypeQueryNode, isExpressionWithTypeArguments, isPropertyDeclaration, isMethodDeclaration, PropertyDeclaration, MethodDeclaration, isIndexedAccessTypeNode, isLiteralTypeNode, isConstructorTypeNode, Statement, NodeArray, Identifier, isTupleTypeNode, isImportTypeNode, isTypePredicateNode, JSDocTag, isEnumDeclaration, EnumDeclaration, createPrinter, EmitHint, isTypeOperatorNode, isConstructorDeclaration, isCallSignatureDeclaration } from 'typescript';
 import { ensureFile } from '../helpers/fs';
-import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, getJSDocSeeLinks, isExported, JSDocSeeTag, getJSDocTagByName } from '../helpers/ast';
+import { getJSDocParamDescription, getJSDocReturnDescription, getJSDocDescription, getJSDocExamples, getJSDocSeeLinks, JSDocSeeTag, getJSDocTagByName } from '../helpers/ast';
 import { TemplateOptions } from './index';
 
 type MarkdownTemplateOptions = TemplateOptions & {
@@ -315,10 +315,7 @@ ${type.members.map((member) => `${renderType(member, references, options).replac
 }
 
 function generateSummary(namespaces: ModuleDeclaration[], classes: ClassDeclaration[], methods: { [key: string]: FunctionDeclaration[] }, constants: VariableDeclaration[], enums: EnumDeclaration[], types: Array<TypeAliasDeclaration | InterfaceDeclaration>, references, options: MarkdownTemplateOptions) {
-    classes = classes.filter((clazz) => isExported(clazz));
-    constants = constants.filter((constant) => isExported(constant.parent.parent));
-    types = types.filter((type) => isExported(type));
-    let methodsList = Object.values(methods).filter((methodList) => isExported(methodList[0]));
+    let methodsList = Object.values(methods);
 
     return `
 ${namespaces.length ? `

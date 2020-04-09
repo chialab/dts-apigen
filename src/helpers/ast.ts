@@ -1,4 +1,4 @@
-import { Node, getJSDocTags, JSDocTag, FunctionDeclaration, MethodDeclaration, isJSDocParameterTag, SyntaxKind, createModifier, createModifiersFromModifierFlags, Modifier, isModuleDeclaration, visitNode, visitNodes, JSDoc, createSourceFile, ScriptTarget, createPrinter, EmitHint, Type, createVariableStatement, createVariableDeclarationList, createVariableDeclaration, TypeNode } from 'typescript';
+import { Node, getJSDocTags, JSDocTag, FunctionDeclaration, MethodDeclaration, isJSDocParameterTag, SyntaxKind, createModifier, createModifiersFromModifierFlags, Modifier, visitNode, visitNodes, JSDoc, createSourceFile, ScriptTarget, createPrinter, EmitHint, createVariableStatement, createVariableDeclarationList, createVariableDeclaration, TypeNode, TypeChecker, Symbol, isExportSpecifier, isVariableDeclaration } from 'typescript';
 import { transformFromAstSync, parseSync } from '@babel/core';
 import { program, VariableDeclaration } from '@babel/types';
 
@@ -179,20 +179,6 @@ export function removeModifier(node: Node, kind: number) {
     }
     list.splice(list.indexOf(modifier), 1);
     delete node['modifierFlagsCache'];
-}
-
-/**
- * Check if a Node is exported
- * @param node The node to check
- */
-export function isExported(node: Node): boolean {
-    if (node.parent && node.parent.parent && isModuleDeclaration(node.parent.parent)) {
-        return true;
-    }
-    if (!node.modifiers) {
-        return false;
-    }
-    return node.modifiers.some((mod) => mod.kind === SyntaxKind.ExportKeyword);
 }
 
 /**
@@ -424,4 +410,43 @@ export function typescriptToBabel(ast: Node): any {
         }
         return value;
     });
+}
+
+export function getAliasedSymbol(typechecker: TypeChecker, symbol: Symbol): Symbol {
+    try {
+        return typechecker.getAliasedSymbol(symbol);
+    } catch (error) {
+        //
+    }
+}
+
+export function getExports(typechecker: TypeChecker, symbol: Symbol) {
+    return typechecker.getExportsOfModule(symbol)
+        .filter((symbol) => {
+            let declaration: Node = symbol.getDeclarations()[0];
+            if (isExportSpecifier(declaration)) {
+                return true;
+            }
+            if (isVariableDeclaration(declaration)) {
+                declaration = declaration.parent.parent;
+            }
+            return hasModifier(declaration, SyntaxKind.ExportKeyword);
+        });
+}
+
+export function getExportedSymbol(typechecker: TypeChecker, symbol: Symbol) {
+    const alias = getAliasedSymbol(typechecker, symbol);
+    if (!alias) {
+        return;
+    }
+    const sourceFile = alias.getDeclarations()[0].getSourceFile();
+    const sourceSymbol = typechecker.getSymbolAtLocation(sourceFile);
+    if (!sourceSymbol) {
+        return;
+    }
+    const exported = typechecker.getExportsOfModule(sourceSymbol);
+    return exported.find((exportedSymbol) =>
+        exportedSymbol === alias ||
+        getAliasedSymbol(typechecker, exportedSymbol) === alias
+    );
 }
