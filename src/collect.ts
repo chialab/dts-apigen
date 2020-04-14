@@ -164,7 +164,7 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
         if (node.left) {
             collectNodeReferences(typechecker, symbols, references, files, external, node.left);
         }
-        if (node.right) {
+        if (node.right && !isIdentifier(node.right)) {
             collectNodeReferences(typechecker, symbols, references, files, external, node.right);
         }
     } else if (isIdentifier(node)) {
@@ -262,7 +262,7 @@ function collectSymbol(typechecker: TypeChecker, symbols: Symbol[], references: 
         symbols.push(symbol);
         return;
     }
-    if (isImportClause(firstDeclaration)) {
+    if (isImportClause(firstDeclaration) && firstDeclaration.namedBindings) {
         let specifier = firstDeclaration.parent.moduleSpecifier as StringLiteral;
         collectSpecifier(typechecker, symbols, references, files, external, symbol, specifier);
     } else if (isImportSpecifier(firstDeclaration)) {

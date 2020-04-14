@@ -1,4 +1,4 @@
-import { isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createModifier, NodeFlags, isSourceFile, createSourceFile, ScriptTarget, ScriptKind, Statement, createPrinter, createModuleDeclaration, createModuleBlock, isImportTypeNode, createTypeReferenceNode, createImportDeclaration, createImportClause, createNamedImports, isImportDeclaration, isImportSpecifier, ImportDeclaration, createImportSpecifier, createStringLiteral, createExportDeclaration, createNamedExports, createExportSpecifier, ExportSpecifier, isTypeParameterDeclaration, TypeChecker, isModuleBlock } from 'typescript';
+import { isVariableDeclaration, Node, Symbol, createIdentifier, SyntaxKind, isExportSpecifier, createModifier, NodeFlags, isSourceFile, createSourceFile, ScriptTarget, ScriptKind, Statement, createPrinter, createModuleDeclaration, createModuleBlock, isImportTypeNode, createTypeReferenceNode, createImportDeclaration, createImportClause, createNamedImports, isImportDeclaration, isImportSpecifier, ImportDeclaration, createImportSpecifier, createStringLiteral, createExportDeclaration, createNamedExports, createExportSpecifier, ExportSpecifier, isTypeParameterDeclaration, TypeChecker, isModuleBlock, isQualifiedName, isImportClause } from 'typescript';
 import { collect } from './collect';
 import { removeModifier, traverse, addModifier, getAliasedSymbol } from './helpers/ast';
 
@@ -150,24 +150,25 @@ export function bundle(fileName: string) {
                 let sourceFile = declaration.getSourceFile();
                 return !(sourceFile.fileName in external);
             });
-        })
+        });
 
-    externalSymbols.map((symbol) => {
-        const declarations = symbol.getDeclarations() || [];
-        return [
+    externalSymbols.map((symbol) => 
+        [
             symbol,
-            declarations.filter((declaration) => {
-                let sourceFile = declaration.getSourceFile();
-                return !(sourceFile.fileName in files) && sourceFile.fileName in external;
-            }),
-        ] as [Symbol, Node[]];
-    }).forEach(([symbol, declarations]) => {
+            symbol.getDeclarations() || [],
+        ] as [Symbol, Node[]]
+    ).forEach(([symbol, declarations]) => {
         if (!declarations.length) {
             return;
         }
 
         let name = createUniqueName(symbol);
         declarations.forEach((declaration) => {
+            if (isImportClause(declaration) && declaration.name) {
+                let specifier = declaration.parent.moduleSpecifier.getText().replace(/['"]/g, '');
+                addExternalImport(symbol, specifier, 'default', name);
+                return;
+            }
             let sourceFile = declaration.getSourceFile();
             let packageId = external[sourceFile.fileName];
             let specifier = packageId.name;
