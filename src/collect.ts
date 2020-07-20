@@ -1,5 +1,5 @@
 import { dirname } from 'path';
-import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode, ModuleResolutionKind, createModuleResolutionCache, ResolvedProjectReference, SyntaxKind, isThisTypeNode, isImportSpecifier, isTypePredicateNode, isLiteralTypeNode, isQualifiedName, isEnumDeclaration, isEnumMember, isToken, isTypeQueryNode, isComputedPropertyName, isPropertyAccessExpression, isInferTypeNode, isConditionalTypeNode, isGetAccessorDeclaration, isSetAccessor, isImportClause, isNamespaceImport, WriteFileCallback, PackageId, StringLiteral } from 'typescript';
+import { createCompilerHost as tsCreateCompilerHost, createProgram as tsCreateProgram, Symbol, TypeChecker, isFunctionDeclaration, isExportSpecifier, isTypeParameterDeclaration, isParameter, isClassDeclaration, isInterfaceDeclaration, isModuleDeclaration, isTypeAliasDeclaration, isVariableDeclaration, ScriptTarget, isSourceFile, isFunctionTypeNode, isVariableStatement, Node, isExpressionWithTypeArguments, isConstructorTypeNode, isMethodSignature, isMethodDeclaration, isConstructorDeclaration, isPropertyDeclaration, isPropertySignature, isConstructSignatureDeclaration, isCallSignatureDeclaration, isIndexSignatureDeclaration, isTypeLiteralNode, isUnionTypeNode, isTypeReferenceNode, isArrayTypeNode, isIdentifier, Identifier, isIntersectionTypeNode, isParenthesizedTypeNode, isTupleTypeNode, isMappedTypeNode, isIndexedAccessTypeNode, isTypeOperatorNode, CompilerOptions, createSourceFile, ScriptKind, resolveModuleName, ResolvedModule, sys, isExportAssignment, isImportTypeNode, ModuleResolutionKind, createModuleResolutionCache, ResolvedProjectReference, SyntaxKind, isThisTypeNode, isImportSpecifier, isTypePredicateNode, isLiteralTypeNode, isQualifiedName, isEnumDeclaration, isEnumMember, isToken, isTypeQueryNode, isComputedPropertyName, isPropertyAccessExpression, isInferTypeNode, isConditionalTypeNode, isGetAccessorDeclaration, isSetAccessor, isImportClause, isNamespaceImport, WriteFileCallback, PackageId, StringLiteral, isArrowFunction } from 'typescript';
 import { loadConfig, createProgram } from './Program';
 import { getAliasedSymbol, getExports, getExportedSymbol } from './helpers/ast';
 
@@ -11,6 +11,7 @@ export type ExternalModules = { [key: string]: PackageId };
 
 function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], references: ReferencesMap, files: Sources, external: ExternalModules, node: Node) {
     if (isFunctionDeclaration(node) ||
+        isArrowFunction(node) ||
         isFunctionTypeNode(node) ||
         isConstructorTypeNode(node) ||
         isConstructorDeclaration(node) ||
@@ -117,9 +118,6 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
     } else if (isUnionTypeNode(node) || isIntersectionTypeNode(node)) {
         node.types.forEach((type) => collectNodeReferences(typechecker, symbols, references, files, external, type));
     } else if (isTypePredicateNode(node)) {
-        if (node.parameterName) {
-            collectNodeReferences(typechecker, symbols, references, files, external, node.parameterName);
-        }
         if (node.type) {
             collectNodeReferences(typechecker, symbols, references, files, external, node.type);
         }
