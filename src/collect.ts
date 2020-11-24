@@ -81,7 +81,7 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
         if (node.initializer) {
             let type = typechecker.getTypeAtLocation(node.initializer);
             if (type) {
-                collectNodeReferences(typechecker, symbols, references, files, external, typechecker.typeToTypeNode(type));
+                collectNodeReferences(typechecker, symbols, references, files, external, typechecker.typeToTypeNode(type, undefined, undefined));
             }
         }
     } else if (isIndexSignatureDeclaration(node)) {
@@ -126,7 +126,7 @@ function collectNodeReferences(typechecker: TypeChecker, symbols: Symbol[], refe
             collectNodeReferences(typechecker, symbols, references, files, external, node.type);
         }
     } else if (isTupleTypeNode(node)) {
-        node.elementTypes.forEach((type) => collectNodeReferences(typechecker, symbols, references, files, external, type));
+        node.elements.forEach((type) => collectNodeReferences(typechecker, symbols, references, files, external, type));
     } else if (isMappedTypeNode(node)) {
         if (node.typeParameter) {
             collectNodeReferences(typechecker, symbols, references, files, external, node.typeParameter);

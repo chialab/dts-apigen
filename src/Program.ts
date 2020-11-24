@@ -1,7 +1,6 @@
 import { existsSync } from 'fs';
 import { resolve } from 'path';
-import { createProgram as tsCreateProgram, CompilerOptions, CompilerHost, Program, Diagnostic, SourceFile, WriteFileCallback, CancellationToken, CustomTransformers, flattenDiagnosticMessageText, ScriptTarget, getPreEmitDiagnostics, ModuleResolutionKind, getParsedCommandLineOfConfigFile, findConfigFile, sys } from 'typescript';
-import { createCompilerHost } from './Host';
+import { createProgram as tsCreateProgram, createCompilerHost, CompilerOptions, CompilerHost, Program, Diagnostic, SourceFile, WriteFileCallback, CancellationToken, CustomTransformers, flattenDiagnosticMessageText, ScriptTarget, getPreEmitDiagnostics, ModuleResolutionKind, getParsedCommandLineOfConfigFile, findConfigFile, sys } from 'typescript';
 
 export function loadConfig(sourceFile: string, options: CompilerOptions): CompilerOptions {
     const configFile = findConfigFile(sourceFile, existsSync);
@@ -48,10 +47,9 @@ export function createProgram(fileNames: ReadonlyArray<string>, options: Compile
 
     // load tsconfig.json
     const compilerOptions = loadConfig(fileNames[0], options);
-    // generate the custom compiler host to correctly load JS files.
-    const compilerHost = createCompilerHost(compilerOptions, true, host);
+
     // create the TypeScript program
-    const program = tsCreateProgram(fileNames, compilerOptions, compilerHost, oldProgram, configFileParsingDiagnostics);
+    const program = tsCreateProgram(fileNames, compilerOptions, host, oldProgram, configFileParsingDiagnostics);
 
     // override the default emit method in order to inject custom transformers, collect generated declaration files and analyze the output
     const originalEmit = program.emit;

@@ -1,6 +1,4 @@
 import { Node, getJSDocTags, JSDocTag, FunctionDeclaration, MethodDeclaration, isJSDocParameterTag, SyntaxKind, createModifier, createModifiersFromModifierFlags, Modifier, visitNode, visitNodes, JSDoc, createSourceFile, ScriptTarget, createPrinter, EmitHint, createVariableStatement, createVariableDeclarationList, createVariableDeclaration, TypeNode, TypeChecker, Symbol, isExportSpecifier, isVariableDeclaration } from 'typescript';
-import { transformFromAstSync, parseSync } from '@babel/core';
-import { program, VariableDeclaration } from '@babel/types';
 
 /**
  * Get the original typeched node of a node
@@ -56,8 +54,8 @@ export function getJSDocDescription(node: Node & { jsDoc?: any[] }): string {
 export function getJSDocExamples(node: Node & { jsDoc?: any[] }): JSDocTag[] {
     const tags = getJSDocTagsByName(node, 'example') || [];
     return tags.map((tag) => {
-        const result = Object.assign({}, tag);
-        result.comment = result.comment.replace(/[ ]*\*/g, '');
+        let result = Object.assign({}, tag);
+        (result as any).comment = result.comment.replace(/[ ]*\*/g, '');
         return result;
     });
 }
@@ -148,8 +146,8 @@ export function addModifier(node: Node, kind: number, before = false) {
     if (hasModifier(node, kind)) {
         removeModifier(node, kind);
     }
-    const modifier = createModifier(kind);
-    modifier.parent = node;
+    let modifier = createModifier(kind);
+    (modifier as any).parent = node;
     if (!node.modifiers) {
         (node.modifiers as any) = createModifiersFromModifierFlags(0);
         (node.modifiers as any).pos = -1;
@@ -348,68 +346,6 @@ export function parseComment(text: string): JSDoc {
     }
     let ast: JSDoc = source.endOfFileToken['jsDoc'][0];
     return ast;
-}
-
-export function parseType(text: string): any {
-    let code = `let A: ${text};`;
-    let file = parseSync(code, {
-        plugins: [
-            require('@babel/plugin-syntax-typescript'),
-        ],
-    });
-    let decl = (file.program.body[0] as VariableDeclaration).declarations[0];
-    return JSON.parse(JSON.stringify((decl.id as any).typeAnnotation), (key, value) => {
-        if (key === 'loc' || key === 'start' || key === 'end') {
-            return undefined;
-        }
-        return value;
-    });
-}
-
-export function parseTypeExpression(text: string): any {
-    const code = `let A = undefined as ${text};`;
-    const file = parseSync(code, {
-        plugins: [
-            require('@babel/plugin-syntax-typescript'),
-        ],
-    });
-    const declaration = (file.program.body[0] as VariableDeclaration).declarations[0];
-    return JSON.parse(JSON.stringify((declaration.init as any).typeAnnotation), (key, value) => {
-        if (key === 'loc' || key === 'start' || key === 'end') {
-            return undefined;
-        }
-        return value;
-    });
-}
-
-export function convertType(type: TypeNode): any {
-    const ast = createVariableStatement([], createVariableDeclarationList([
-        createVariableDeclaration('A', type)
-    ]));
-    const declaration = typescriptToBabel(ast);
-    return declaration.declarations[0].id.typeAnnotation;
-}
-
-export function babelToTypescript(ast): Node {
-    const { code } = transformFromAstSync(program([ast], [], 'script'));
-    const source = createSourceFile('', code, ScriptTarget.ESNext);
-    return source.statements[0];
-}
-
-export function typescriptToBabel(ast: Node): any {
-    const code = createPrinter().printNode(EmitHint.Unspecified, ast, undefined);
-    const file = parseSync(code, {
-        plugins: [
-            require('@babel/plugin-syntax-typescript'),
-        ],
-    });
-    const removeKeys = ['loc', 'start', 'end', 'trailingComments'];
-    return JSON.parse(JSON.stringify(file.program.body[0]), (key, value) => {
-        if (removeKeys.indexOf(key) !== -1) {
-            return undefined;
-        }
-        return value;
-    });
 }
 
 export function getAliasedSymbol(typechecker: TypeChecker, symbol: Symbol): Symbol {

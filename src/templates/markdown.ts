@@ -254,7 +254,7 @@ ${type.members.map((member) => `${renderType(member, references, options).replac
         return `${renderType(type.objectType, references, options)}[${renderType(type.indexType, references, options)}]`;
     }
     if (isTupleTypeNode(type)) {
-        return `[${type.elementTypes.map((t) => renderType(t, references, options)).join(', ')}]`;
+        return `[${type.elements.map((t) => renderType(t, references, options)).join(', ')}]`;
     }
     if (isLiteralTypeNode(type)) {
         return nameToString(type);
