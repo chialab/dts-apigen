@@ -171,6 +171,10 @@ export function bundle(fileName: string) {
             }
             let sourceFile = declaration.getSourceFile();
             let packageId = external[sourceFile.fileName];
+            if (!packageId) {
+                return;
+            }
+
             let specifier = packageId.name;
             if (packageId.subModuleName) {
                 specifier += `/${packageId.subModuleName.replace(/\.d\.ts$/, '')}`;
